@@ -40,7 +40,6 @@
 .settings-tabs{display:flex;gap:6px;border-bottom:1px solid #303638;margin-bottom:20px;overflow-x:auto}
 .settings-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:#9da3a4;font-size:13px;font-weight:600;padding:10px 4px;margin-right:16px;white-space:nowrap}
 .settings-tabs button.active{color:#fff;border-color:#c7f36b}
-.users-waiting{color:#f5d27a;font-weight:600}
 .user-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center}
 .user-info{display:grid;gap:2px;min-width:0}
 .user-info b{font-size:13px}
@@ -53,3 +52,12 @@
 .user-self{color:#7f8a89;font-size:11px;max-width:200px}
 @media(max-width:800px){.user-row{grid-template-columns:1fr}.user-self{max-width:none}.logout{padding:0 9px}}
 .auth-screen .muted{color:#9da3a4;font-size:13px}
+.auth-hint{margin:0;text-align:center;color:#7f8a89;font-size:11px}
+.users-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
+.users-head .settings-desc{margin:0}
+.users-head .add-operation{flex-shrink:0}
+.edit-modal select{width:100%;display:block;height:42px;margin-top:8px;border:1px solid #485151;border-radius:5px;background:#171b1d;color:#f3f5f3;outline:none;padding:0 11px;font-size:13px}
+.edit-modal select:focus{border-color:#a4cd62}
+.edit-modal .auth-error{margin:0 0 12px}
+.edit-modal .settings-desc b{color:#e7ebe8}
+@media(max-width:800px){.users-head{flex-direction:column}}

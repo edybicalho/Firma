@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, CalendarDays, ChevronDown, FileText, LayoutDashboard, LogOut, Menu, Pencil, Plus, RefreshCw, Save, Search, Settings2, StickyNote, TrendingUp, X, BarChart3, Trash2 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { emailToUsername } from '@/lib/types';
 import type { Profile } from '@/lib/types';
 import { Login, PendingAccess } from '@/Login';
 import { UsersAdmin } from '@/UsersAdmin';
@@ -307,7 +308,7 @@ function App() {
 
   if (session === undefined || (session && profile === undefined)) return <div className="auth-screen"><p className="muted">Carregando...</p></div>;
   if (!session) return <Login />;
-  if (!profile || !profile.active) return <PendingAccess email={session.user.email ?? ''} onRetry={() => void loadProfile()} onSignOut={signOut} />;
+  if (!profile || !profile.active) return <PendingAccess username={profile?.username ?? emailToUsername(session.user.email ?? '')} onRetry={() => void loadProfile()} onSignOut={signOut} />;
   return <Workspace key={profile.id} profile={profile} onSignOut={signOut} />;
 }
 
