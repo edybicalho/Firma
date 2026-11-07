@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, Plus, Save, ShieldCheck, UserCheck, UserX, X } from 'lucide-react';
+import { KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, UserCheck, UserX, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { USERNAME_PATTERN } from '@/lib/types';
 import type { Profile, Role } from '@/lib/types';
@@ -9,6 +9,8 @@ const rpcError = (message: string, fallback: string) => {
   if (message.includes('usuario_invalido')) return 'O usuário deve ter de 3 a 30 caracteres: letras minúsculas, números, ponto, hífen ou sublinhado.';
   if (message.includes('senha_curta')) return 'A senha precisa ter pelo menos 6 caracteres.';
   if (message.includes('sem_permissao')) return 'Só administradores podem fazer isso.';
+  if (message.includes('nome_vazio')) return 'Informe o nome da pessoa.';
+  if (message.includes('proprio_usuario')) return 'Você não pode excluir o próprio usuário.';
   return fallback;
 };
 
@@ -23,6 +25,9 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
   const [newRole, setNewRole] = useState<Role>('operator');
   const [passwordUser, setPasswordUser] = useState<Profile | null>(null);
   const [resetPassword, setResetPassword] = useState('');
+  const [editUser, setEditUser] = useState<Profile | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editUsername, setEditUsername] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -78,6 +83,34 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
     setPasswordUser(null);
   };
 
+  const openEdit = (user: Profile) => {
+    setEditName(user.name); setEditUsername(user.username); setFormError('');
+    setEditUser(user);
+  };
+
+  const saveEdit = async () => {
+    if (!editUser) return;
+    const username = editUsername.trim().toLowerCase();
+    if (!editName.trim()) { setFormError(rpcError('nome_vazio', '')); return; }
+    if (!USERNAME_PATTERN.test(username)) { setFormError(rpcError('usuario_invalido', '')); return; }
+    setSaving(true);
+    const { error } = await supabase.rpc('admin_update_user', { p_user_id: editUser.id, p_username: username, p_name: editName.trim() });
+    setSaving(false);
+    if (error) { setFormError(rpcError(error.message, 'Não foi possível salvar as alterações.')); return; }
+    notify('Usuário atualizado.');
+    setEditUser(null);
+    await loadUsers();
+  };
+
+  const deleteUser = async (user: Profile) => {
+    if (!confirm(`Excluir o usuário ${user.username} (${user.name})? A pessoa perde o acesso e isso não pode ser desfeito. Os lançamentos já feitos continuam no histórico.`)) return;
+    setBusyId(user.id);
+    const { error } = await supabase.rpc('admin_delete_user', { p_user_id: user.id });
+    if (error) notify(rpcError(error.message, 'Não foi possível excluir o usuário.'));
+    else { notify(`Usuário ${user.username} excluído.`); await loadUsers(); }
+    setBusyId('');
+  };
+
   return (
     <div className="users-admin">
       <div className="users-head">
@@ -100,6 +133,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
                   <i className={`pill ${user.role === 'admin' ? 'admin' : ''}`}>{user.role === 'admin' ? 'Administrador' : 'Operador'}</i>
                 </div>
                 <div className="settings-op-actions">
+                  <button className="ghost" disabled={busy} onClick={() => openEdit(user)}><Pencil size={13} /> Editar</button>
                   <button className="ghost" disabled={busy} onClick={() => openPassword(user)}><KeyRound size={13} /> Trocar senha</button>
                   {!self && (
                     <>
@@ -109,6 +143,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
                       <button className={`ghost ${user.active ? 'danger' : ''}`} disabled={busy} onClick={() => void updateUser(user, { active: !user.active }, user.active ? 'Acesso desativado.' : 'Acesso liberado.')}>
                         {user.active ? <><UserX size={13} /> Desativar</> : <><UserCheck size={13} /> Liberar</>}
                       </button>
+                      <button className="ghost danger" disabled={busy} onClick={() => void deleteUser(user)}><Trash2 size={13} /> Excluir</button>
                     </>
                   )}
                 </div>
@@ -135,6 +170,19 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
             </label>
             {formError && <p className="auth-error" role="alert">{formError}</p>}
             <div className="modal-actions"><button className="ghost" onClick={() => setCreating(false)}>Cancelar</button><button className="save modal-save" disabled={saving} onClick={() => void createUser()}><Save size={15} /> {saving ? 'Criando...' : 'Criar usuário'}</button></div>
+          </section>
+        </div>
+      )}
+
+      {editUser && (
+        <div className="modal-backdrop">
+          <section className="edit-modal">
+            <div className="modal-heading"><div><small>EDITAR USUÁRIO</small><h3>{editUser.name}</h3></div><button className="close-modal" aria-label="Fechar" onClick={() => setEditUser(null)}><X size={18} /></button></div>
+            <label htmlFor="edit-user-name">Nome da pessoa<input id="edit-user-name" value={editName} onChange={(event) => setEditName(event.target.value)} /></label>
+            <label htmlFor="edit-user-login">Usuário (login)<input id="edit-user-login" autoCapitalize="none" spellCheck={false} value={editUsername} onChange={(event) => setEditUsername(event.target.value.toLowerCase())} /></label>
+            {editUsername.trim().toLowerCase() !== editUser.username && <p className="settings-desc">A pessoa passa a entrar com <b>{editUsername.trim().toLowerCase() || '...'}</b>. A senha continua a mesma.</p>}
+            {formError && <p className="auth-error" role="alert">{formError}</p>}
+            <div className="modal-actions"><button className="ghost" onClick={() => setEditUser(null)}>Cancelar</button><button className="save modal-save" disabled={saving} onClick={() => void saveEdit()}><Save size={15} /> {saving ? 'Salvando...' : 'Salvar alterações'}</button></div>
           </section>
         </div>
       )}

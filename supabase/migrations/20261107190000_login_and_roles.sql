@@ -207,3 +207,40 @@ create policy movements_delete_today on public.movements
   using (public.is_active_user() and recorded_at::date = (now() at time zone 'America/Sao_Paulo')::date);
 create policy movements_admin on public.movements
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- 12. Administrador edita nome e usuário de login de alguém (inclusive o próprio)
+create or replace function public.admin_update_user(p_user_id uuid, p_username text, p_name text)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_username text := lower(trim(p_username));
+  v_email text := lower(trim(p_username)) || '@acumula.local';
+begin
+  if not public.is_admin() then raise exception 'sem_permissao'; end if;
+  if v_username !~ '^[a-z0-9._-]{3,30}$' then raise exception 'usuario_invalido'; end if;
+  if coalesce(trim(p_name), '') = '' then raise exception 'nome_vazio'; end if;
+  if exists (select 1 from public.profiles where username = v_username and id <> p_user_id) then
+    raise exception 'usuario_existe';
+  end if;
+  update auth.users set email = v_email, updated_at = now() where id = p_user_id;
+  update auth.identities
+     set identity_data = identity_data || jsonb_build_object('email', v_email), updated_at = now()
+   where user_id = p_user_id and provider = 'email';
+  update public.profiles set username = v_username, name = trim(p_name) where id = p_user_id;
+end;
+$$;
+revoke all on function public.admin_update_user(uuid, text, text) from public, anon;
+grant execute on function public.admin_update_user(uuid, text, text) to authenticated;
+
+-- 13. Administrador exclui um usuário (nunca o próprio). Os lançamentos já feitos continuam.
+create or replace function public.admin_delete_user(p_user_id uuid)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'sem_permissao'; end if;
+  if p_user_id = auth.uid() then raise exception 'proprio_usuario'; end if;
+  delete from auth.users where id = p_user_id;
+end;
+$$;
+revoke all on function public.admin_delete_user(uuid) from public, anon;
+grant execute on function public.admin_delete_user(uuid) to authenticated;

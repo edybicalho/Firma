@@ -58,3 +58,5 @@
 .edit-modal .auth-error{margin:0 0 12px}
 .edit-modal .settings-desc b{color:#e7ebe8}
 @media(max-width:800px){.users-head{flex-direction:column}}
+.user-row .settings-op-actions{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:800px){.user-row .settings-op-actions{flex-direction:row;justify-content:flex-start}}
