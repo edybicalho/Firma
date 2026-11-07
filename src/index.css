@@ -13,7 +13,7 @@
 .edit-modal textarea:focus{border-color:#a4cd62}
 
 .row{grid-template-columns:110px repeat(3,minmax(0,1fr)) 36px;column-gap:16px}
-.row.with-operation{grid-template-columns:110px minmax(0,1.5fr) repeat(3,minmax(0,1fr)) 36px;min-width:780px}
+.row.with-operation{grid-template-columns:110px 190px repeat(3,140px) minmax(36px,1fr);min-width:850px}
 .row>*{min-width:0}
 .row .num{text-align:right;font-variant-numeric:tabular-nums}
 .row .op-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
