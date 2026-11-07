@@ -85,12 +85,20 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
   const exitNumber = parseAmount(exit);
   const newEntry = entryNumber - (previous?.entry_total ?? 0);
   const newExit = exitNumber - (previous?.exit_total ?? 0);
-  const projectTotals = useMemo(() => movements.reduce<Record<string, { entry: number; exit: number }>>((acc, item) => {
-    if (!acc[item.project_id]) acc[item.project_id] = { entry: 0, exit: 0 };
-    acc[item.project_id].entry += Number(item.entry_total) || 0;
-    acc[item.project_id].exit += Number(item.exit_total) || 0;
-    return acc;
-  }, {}), [movements]);
+  // Totais do projeto: como cada lançamento já é acumulado, soma só o último lançamento de cada operação
+  const projectTotals = useMemo(() => {
+    const latestByOperation: Record<string, Movement> = {};
+    for (const item of movements) {
+      const current = latestByOperation[item.operation_id];
+      if (!current || `${item.recorded_at}${item.created_at}` > `${current.recorded_at}${current.created_at}`) latestByOperation[item.operation_id] = item;
+    }
+    return Object.values(latestByOperation).reduce<Record<string, { entry: number; exit: number }>>((acc, item) => {
+      if (!acc[item.project_id]) acc[item.project_id] = { entry: 0, exit: 0 };
+      acc[item.project_id].entry += Number(item.entry_total) || 0;
+      acc[item.project_id].exit += Number(item.exit_total) || 0;
+      return acc;
+    }, {});
+  }, [movements]);
   // Resultado de um projeto em um dia: soma, em todas as operações, de (entrada nova - anterior) - (saída nova - anterior)
   const dayResult = (pid: string, day: string) => {
     let result = 0;
