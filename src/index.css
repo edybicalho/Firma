@@ -11,3 +11,10 @@
 .report-notes{margin:-6px 0 16px;padding:10px 12px;border-left:2px solid #789d35;background:#171b1d;color:#bac2c0;font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-height:7.5em;overflow:auto}
 .edit-modal textarea{width:100%;display:block;margin-top:8px;border:1px solid #485151;border-radius:5px;background:#171b1d;color:#f3f5f3;outline:none;padding:10px 11px;font:13px/1.5 'DM Sans',sans-serif;resize:vertical}
 .edit-modal textarea:focus{border-color:#a4cd62}
+
+.row{grid-template-columns:110px repeat(3,minmax(0,1fr)) 36px;column-gap:16px}
+.row.with-operation{grid-template-columns:110px minmax(0,1.5fr) repeat(3,minmax(0,1fr)) 36px;min-width:780px}
+.row>*{min-width:0}
+.row .num{text-align:right;font-variant-numeric:tabular-nums}
+.row .op-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.header span:first-child{display:block}
