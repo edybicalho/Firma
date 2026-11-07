@@ -28,7 +28,7 @@
 .auth-card input{height:42px;border:1px solid #485151;border-radius:5px;background:#171b1d;color:#f3f5f3;outline:none;padding:0 11px;font-size:13px}
 .auth-card input:focus{border-color:#a4cd62}
 .auth-submit{display:flex;align-items:center;justify-content:center;gap:8px;height:42px}
-.auth-submit:focus-visible,.auth-switch:focus-visible,.settings-tabs button:focus-visible{outline:2px solid #c7f36b;outline-offset:2px}
+.auth-submit:focus-visible,.auth-switch:focus-visible{outline:2px solid #c7f36b;outline-offset:2px}
 .auth-switch{display:flex;align-items:center;justify-content:center;gap:7px;background:none;border:0;color:#b3dd73;font-size:12px;padding:4px}
 .auth-switch:hover{color:#d9f99d;text-decoration:underline}
 .auth-error{margin:0;border:1px solid #a75155;background:#a7515522;color:#ffb4b8;border-radius:5px;padding:10px 12px;font-size:12px}
@@ -37,9 +37,6 @@
 .user-chip b{color:#e7ebe8;font-size:12px}
 .user-chip small{color:#899294;font-size:10px}
 .logout{height:32px;font-size:11px}
-.settings-tabs{display:flex;gap:6px;border-bottom:1px solid #303638;margin-bottom:20px;overflow-x:auto}
-.settings-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:#9da3a4;font-size:13px;font-weight:600;padding:10px 4px;margin-right:16px;white-space:nowrap}
-.settings-tabs button.active{color:#fff;border-color:#c7f36b}
 .user-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center}
 .user-info{display:grid;gap:2px;min-width:0}
 .user-info b{font-size:13px}
