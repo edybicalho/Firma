@@ -60,3 +60,27 @@
 @media(max-width:800px){.users-head{flex-direction:column}}
 .user-row .settings-op-actions{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:800px){.user-row .settings-op-actions{flex-direction:row;justify-content:flex-start}}
+/* Ajustes de layout (lápis do projeto, lançamento anterior) */
+.project{position:relative}
+.project-name{padding-right:26px}
+.previous-values{grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+@media(max-width:800px){
+.previous-values{grid-template-columns:1fr 1fr;row-gap:14px}
+.previous-values div:nth-child(3){grid-column:1/-1;border-left:0;padding-left:0;border-top:1px solid #3b4445;padding-top:14px}
+}
+@media(max-width:800px){
+.topbar nav.mobile-open{flex-direction:column;align-items:stretch}
+.topbar nav.mobile-open button{justify-content:flex-start;width:100%}
+}
+/* Consulta de lançamentos no celular: cada lançamento vira um bloco, sem rolagem lateral */
+@media(max-width:600px){
+.table .row,.table .row.with-operation{min-width:0;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:10px;row-gap:8px;padding:12px 14px;align-items:start}
+.table .row.header{display:none}
+.table .row>span:first-child{grid-column:1/3;grid-row:1}
+.table .row>:last-child{grid-column:3;grid-row:1;justify-self:end}
+.table .row .op-cell{grid-column:1/-1;white-space:normal;color:#e0e5e2}
+.table .row .num::before{content:attr(data-label);display:block;margin-bottom:3px;color:#7f8a89;font:9px 'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.06em;white-space:normal}
+.table .row .num{white-space:normal;overflow-wrap:anywhere}
+.history-actions{flex-direction:row;align-items:center}
+.section-head{flex-direction:column;gap:12px}
+}
