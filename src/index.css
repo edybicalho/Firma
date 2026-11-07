@@ -84,3 +84,7 @@
 .history-actions{flex-direction:row;align-items:center}
 .section-head{flex-direction:column;gap:12px}
 }
+.report-totals.single,.report-result.single{grid-template-columns:1fr}
+.report-totals.single strong{font-size:16px}
+.report-result.single strong{font-size:16px}
+.report-totals strong.negative-value{color:#ff969c}
