@@ -18,3 +18,38 @@
 .row .num{text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}
 .row .op-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row.header span:first-child{display:block}
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px));background:radial-gradient(circle at 60% -20%,#2c393755,transparent 38%),#111416}
+.auth-card{width:min(400px,100%);display:grid;gap:16px;border:1px solid #3a4243;border-radius:10px;background:#1a1f21;box-shadow:0 24px 80px #0007;padding:28px}
+.auth-heading small{font-size:10px;letter-spacing:.14em;color:#899294;font-weight:700}
+.auth-heading h1{margin:6px 0 6px;font-size:24px;letter-spacing:-.035em;text-wrap:balance}
+.auth-heading p{margin:0;color:#9da3a4;font-size:12px;line-height:1.5}
+.auth-heading b{color:#e7ebe8;overflow-wrap:anywhere}
+.auth-card label{display:grid;gap:7px;color:#aeb8b5;font-size:11px}
+.auth-card input{height:42px;border:1px solid #485151;border-radius:5px;background:#171b1d;color:#f3f5f3;outline:none;padding:0 11px;font-size:13px}
+.auth-card input:focus{border-color:#a4cd62}
+.auth-submit{display:flex;align-items:center;justify-content:center;gap:8px;height:42px}
+.auth-submit:focus-visible,.auth-switch:focus-visible,.settings-tabs button:focus-visible{outline:2px solid #c7f36b;outline-offset:2px}
+.auth-switch{display:flex;align-items:center;justify-content:center;gap:7px;background:none;border:0;color:#b3dd73;font-size:12px;padding:4px}
+.auth-switch:hover{color:#d9f99d;text-decoration:underline}
+.auth-error{margin:0;border:1px solid #a75155;background:#a7515522;color:#ffb4b8;border-radius:5px;padding:10px 12px;font-size:12px}
+.auth-card .notice{margin:0;line-height:1.5}
+.user-chip{display:grid;text-align:right;line-height:1.25}
+.user-chip b{color:#e7ebe8;font-size:12px}
+.user-chip small{color:#899294;font-size:10px}
+.logout{height:32px;font-size:11px}
+.settings-tabs{display:flex;gap:6px;border-bottom:1px solid #303638;margin-bottom:20px;overflow-x:auto}
+.settings-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:#9da3a4;font-size:13px;font-weight:600;padding:10px 4px;margin-right:16px;white-space:nowrap}
+.settings-tabs button.active{color:#fff;border-color:#c7f36b}
+.users-waiting{color:#f5d27a;font-weight:600}
+.user-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center}
+.user-info{display:grid;gap:2px;min-width:0}
+.user-info b{font-size:13px}
+.user-info small{color:#899294;font-size:11px;overflow-wrap:anywhere}
+.user-badges{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-style:normal;font-size:10px;font-weight:600;border-radius:12px;padding:3px 9px;background:#2a3133;color:#bac2c0;white-space:nowrap}
+.pill.ok{background:#a0d25622;color:#b3dd73}
+.pill.wait{background:#f5d27a1f;color:#f5d27a}
+.pill.admin{background:#7aa7f51f;color:#a9c6ff}
+.user-self{color:#7f8a89;font-size:11px;max-width:200px}
+@media(max-width:800px){.user-row{grid-template-columns:1fr}.user-self{max-width:none}.logout{padding:0 9px}}
+.auth-screen .muted{color:#9da3a4;font-size:13px}
