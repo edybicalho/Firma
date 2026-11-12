@@ -428,3 +428,5 @@ html[data-theme=dark] .result.negative .result-value.half{border-color:#a75155}
 }
 html[data-theme=dark] .result-value.half{border-top-color:#526a37}
 html[data-theme=dark] .result.negative .result-value.half{border-top-color:#a75155}
+.inputs input::placeholder{color:#b3bcbc;opacity:1}
+html[data-theme=dark] .inputs input::placeholder{color:#4f5a5a}
