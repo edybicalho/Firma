@@ -46,6 +46,8 @@ Migrações em `supabase/migrations/`, a rodar **nesta ordem** no SQL Editor (to
 
 Depois: `select public.create_first_admin('admin', 'senha', 'Nome');` e desligar os cadastros públicos em Authentication.
 
+Na criação do projeto: Data API ligada, **"Automatically expose new tables" desligada** (a migração 5 libera cada tabela explicitamente) e "Enable automatic RLS" ligada. O `npm run test:db` testa os dois jeitos.
+
 **Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as linhas; o `npm run test:db` também roda essa conferência.
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.

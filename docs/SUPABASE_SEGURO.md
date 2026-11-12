@@ -18,7 +18,12 @@ Quem entra na sua conta do Supabase vê e apaga todos os dados. Por isso, isto v
 2. **Name**: `acumula`.
 3. **Database Password**: clique em **Generate a password** e guarde num gerenciador de senhas. Ela não é usada pelo app, mas dá acesso total ao banco.
 4. **Region**: **South America (São Paulo)**.
-5. **Plano**: **Pro**. É o que tem **backup diário automático** (guarda os últimos 7 dias). Com dados importantes, não use o plano gratuito: ele não tem backup que você consiga restaurar e o projeto é pausado se ficar uma semana sem uso.
+5. **GitHub (optional)**: **não conecte**. Mudanças no banco devem ser feitas à mão, conferidas.
+6. **Security**:
+   - **Enable Data API**: ✅ marcado (o app usa).
+   - **Automatically expose new tables**: ⬜ **desmarcado** (os arquivos do banco liberam só o necessário, tabela por tabela).
+   - **Enable automatic RLS**: ✅ marcado (toda tabela nova já nasce trancada).
+7. **Plano**: **Pro**. É o que tem **backup diário automático** (guarda os últimos 7 dias). Com dados importantes, não use o plano gratuito: ele não tem backup que você consiga restaurar e o projeto é pausado se ficar uma semana sem uso.
 
 > **Supabase antigo do Bolt:** se for usar o que o Bolt criou, confira antes em **Project Settings → General** se você é o dono (Owner) e se ele está em São Paulo e no plano Pro. Se não tiver certeza de quem mais tem acesso a ele, é mais seguro criar um novo e trazer os dados.
 

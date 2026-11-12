@@ -26,7 +26,15 @@ conferencia=$("${PSQL[@]}" -d teste_novo -At -F ' | ' -f supabase/conferencia_se
 echo "$conferencia" | sed 's/^/   /'
 if echo "$conferencia" | grep -q '❌'; then echo "FALHOU: a conferência de segurança encontrou problemas"; exit 1; fi
 
-echo "2) Supabase antigo (criado pelo Bolt), com dados"
+echo "2) Supabase novo com \"Automatically expose new tables\" desligado"
+novo_banco teste_sem_exposicao
+"${PSQL[@]}" -d teste_sem_exposicao -f supabase/tests/02_sem_exposicao_automatica.sql >/dev/null
+rodar_migracoes teste_sem_exposicao
+"${PSQL[@]}" -d teste_sem_exposicao -At -f supabase/tests/10_regras_de_acesso.sql
+if "${PSQL[@]}" -d teste_sem_exposicao -At -F ' | ' -f supabase/conferencia_seguranca.sql | grep -q '❌'; then echo "FALHOU: conferência de segurança"; exit 1; fi
+echo "   Conferência de segurança: tudo ✅"
+
+echo "3) Supabase antigo (criado pelo Bolt), com dados"
 novo_banco teste_bolt
 "${PSQL[@]}" -d teste_bolt -f supabase/tests/01_banco_antigo_bolt.sql >/dev/null
 rodar_migracoes teste_bolt
@@ -34,5 +42,5 @@ rodar_migracoes teste_bolt
 echo "   Conferência no banco antigo (deve apontar o número repetido e a falta de administrador):"
 "${PSQL[@]}" -d teste_bolt -At -F ' | ' -f supabase/conferencia_seguranca.sql | grep '❌' | sed 's/^/   /'
 
-"${PSQL[@]}" -d postgres -c "drop database teste_novo" -c "drop database teste_bolt" >/dev/null
+"${PSQL[@]}" -d postgres -c "drop database teste_novo" -c "drop database teste_sem_exposicao" -c "drop database teste_bolt" >/dev/null
 echo "Tudo certo."
