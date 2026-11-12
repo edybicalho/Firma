@@ -399,3 +399,20 @@ html[data-theme=dark] .base-tag{background:#f5d27a1f;color:#f5d27a}
 .ficha-area-head:empty{display:none}
 .cards .card>.inputs:first-child{margin-top:4px}
 @media(max-width:800px){.result{grid-template-columns:1fr;gap:10px}}
+
+/* Resultado do dia: total e ÷ 2 no mesmo destaque */
+.result{grid-template-columns:1fr auto}
+.result-values{display:flex;align-items:stretch;gap:0}
+.result-value{display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding:0 22px}
+.result-value.half{border-left:1px solid #a9c97a}
+.result-value:last-child{padding-right:0}
+.result-value small{color:#5f7d3a;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.result-value strong{color:#4f7a0e;font:600 25px 'JetBrains Mono';letter-spacing:-.06em}
+.result.negative .result-value strong,.result.negative .result-value small{color:#a8000a}
+.result.negative .result-value.half{border-color:#e6aeb1}
+@media(max-width:800px){.result{grid-template-columns:1fr}.result-values{width:100%}.result-value{flex:1;align-items:flex-start;padding:0 0 0 14px}.result-value:first-child{padding-left:0}.result-value strong{font-size:22px}}
+html[data-theme=dark] .result-value.half{border-color:#526a37}
+html[data-theme=dark] .result-value small{color:#98a68e}
+html[data-theme=dark] .result-value strong{color:#c7f36b}
+html[data-theme=dark] .result.negative .result-value strong,html[data-theme=dark] .result.negative .result-value small{color:#ff969c}
+html[data-theme=dark] .result.negative .result-value.half{border-color:#a75155}
