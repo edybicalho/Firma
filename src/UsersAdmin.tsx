@@ -116,7 +116,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
   return (
     <div className="users-admin">
       <div className="users-head">
-        <p className="settings-desc">Cadastre quem vai usar o app. Cada pessoa entra com o usuário e a senha que você criar.</p>
+        
         <button className="add-operation" onClick={openCreate}><Plus size={15} /> Novo usuário</button>
       </div>
       {loading ? <p className="empty">Carregando usuários...</p> : users.length ? (

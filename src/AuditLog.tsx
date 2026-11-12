@@ -50,7 +50,7 @@ export function AuditLog({ projects, operations }: { projects: Named[]; operatio
   return (
     <div className="audit-log">
       <div className="users-head">
-        <p className="settings-desc">Toda criação, alteração e exclusão fica guardada aqui, com quem fez e quando. Ninguém consegue apagar este registro pelo app.</p>
+        
         <div className="audit-tools">
           <select aria-label="Filtrar registro" value={filter} onChange={(event) => setFilter(event.target.value)}>
             {FILTERS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}

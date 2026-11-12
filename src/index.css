@@ -390,3 +390,12 @@ html[data-theme=dark] .base-text b{color:#f2f4f2}
 html[data-theme=dark] .base-text small{color:#899294}
 html[data-theme=dark] .base-toggle.on .base-text small{color:#f5d27a}
 html[data-theme=dark] .base-tag{background:#f5d27a1f;color:#f5d27a}
+
+/* Tela mais limpa: menos espaço onde saíram os textos de explicação */
+.users-head:has(> .add-operation:only-child){justify-content:flex-end}
+.result{grid-template-columns:1fr auto auto}
+.main-heading h2{margin-top:0}
+.cards .card>.previous-date:first-child{margin-top:0;padding-top:4px}
+.ficha-area-head:empty{display:none}
+.cards .card>.inputs:first-child{margin-top:4px}
+@media(max-width:800px){.result{grid-template-columns:1fr;gap:10px}}
