@@ -15,6 +15,10 @@ describe('frases do registro de alterações', () => {
     expect(describeAudit(entry('movements', 'INSERT', null, { project_id: 'p1', operation_id: 'o1', entry_total: 1500, exit_total: 500, recorded_at: '2026-11-12' }), lookups))
       .toBe('Lançou em Obra Norte / 01 — Fundação: entrada R$ 1.500,00, saída R$ 500,00 (dia 12/11/2026)');
   });
+  it('novo jogo', () => {
+    expect(describeAudit(entry('movements', 'INSERT', null, { project_id: 'p1', operation_id: 'o1', entry_total: 100, exit_total: 50, recorded_at: '2026-11-12', is_base: true }), lookups))
+      .toBe('Lançou um novo jogo em Obra Norte / 01 — Fundação: entrada R$\u00a0100,00, saída R$\u00a050,00 (dia 12/11/2026; não soma no resultado)');
+  });
   it('exclusão de lançamento de projeto que já não existe', () => {
     expect(describeAudit(entry('movements', 'DELETE', { project_id: 'zz', operation_id: 'zz', entry_total: 10, exit_total: 0, recorded_at: '2026-11-01' }, null), lookups))
       .toContain('projeto excluído / operação excluída');

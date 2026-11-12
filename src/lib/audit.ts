@@ -49,6 +49,7 @@ export function describeAudit(entry: AuditEntry, lookups: AuditLookups): string 
     }
     case 'movements': {
       const where = `${project(row.project_id)} / ${operation(row.operation_id)}`;
+      if (entry.action === 'INSERT' && row.is_base) return `Lançou um novo jogo em ${where}: entrada ${money(num(row.entry_total))}, saída ${money(num(row.exit_total))} (dia ${day(row.recorded_at)}; não soma no resultado)`;
       if (entry.action === 'INSERT') return `Lançou em ${where}: entrada ${money(num(row.entry_total))}, saída ${money(num(row.exit_total))} (dia ${day(row.recorded_at)})`;
       if (entry.action === 'DELETE') return `Excluiu o lançamento de ${day(row.recorded_at)} em ${where} (entrada ${money(num(row.entry_total))}, saída ${money(num(row.exit_total))})`;
       return `Corrigiu o lançamento de ${day(before.recorded_at)} em ${where}: entrada ${money(num(before.entry_total))} → ${money(num(after.entry_total))}, saída ${money(num(before.exit_total))} → ${money(num(after.exit_total))}`;
