@@ -10,7 +10,7 @@ import { AuditLog } from '@/AuditLog';
 import { fetchAllPages } from '@/lib/pages';
 import { applyTheme, currentTheme } from '@/lib/theme';
 import type { Theme } from '@/lib/theme';
-import { byDateDesc, dayResult, operationDayResults, formatAmountInput, lastDayByProject, money, movementsCsv, netById, parseAmount, todayIso } from '@/lib/calc';
+import { byDateDesc, dayResult, operationDayResults, formatAmountInput, lastDayByProject, money, movementsCsv, netById, parseAmount, todayIso, toCents, fromCents } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 type Project = { id: string; name: string; status: string; total_entry: number; total_exit: number; notes: string | null };
@@ -90,8 +90,8 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
   const exitNumber = parseAmount(exit);
   const entryInvalid = entry.trim() !== '' && entryNumber === null;
   const exitInvalid = exit.trim() !== '' && exitNumber === null;
-  const newEntry = (entryNumber ?? 0) - Number(previous?.entry_total ?? 0);
-  const newExit = (exitNumber ?? 0) - Number(previous?.exit_total ?? 0);
+  const newEntry = fromCents(toCents(entryNumber) - toCents(previous?.entry_total));
+  const newExit = fromCents(toCents(exitNumber) - toCents(previous?.exit_total));
   // Novo jogo: o valor salvo só vira o novo ponto de partida (não soma no resultado do dia)
   const [asBase, setAsBase] = useState(false);
   const entryProblem = entryInvalid ? 'Valor inválido. Use, por exemplo, 1.234,56' : !asBase && newEntry < 0 && entryNumber !== null ? `Não pode ser menor que o lançamento anterior (${money(Number(previous?.entry_total ?? 0))}). Se começou um novo jogo, ligue "Novo jogo".` : '';

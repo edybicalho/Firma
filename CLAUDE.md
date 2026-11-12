@@ -30,6 +30,7 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 - Senha mínima de **8** caracteres (tela e banco). Trocar a senha ou desativar alguém encerra as sessões abertas dessa pessoa.
 - Valores digitados no jeito brasileiro (`1.234,56`; `1.500` = mil e quinhentos). Valor inválido é recusado com aviso, nunca vira zero. O acumulado novo não pode ser menor que o anterior, **exceto com o botão "Novo jogo"** ligado.
 - **Novo jogo** (botão no quadro de novo lançamento; por dentro é uma "nova base"): aceita qualquer número e ele vira o novo ponto de partida da ficha; o movimento desse lançamento é zero (não soma no resultado do dia) e os próximos comparam com ele. Fica marcado no banco em `movements.is_base` e aparece como "novo jogo" no histórico, na lista do calendário, na planilha e no Registro. O botão desliga sozinho depois de salvar e ao trocar de ficha.
+- **Contas sempre em centavos inteiros** (`toCents`/`fromCents` em `src/lib/calc.ts`), nunca somando valores com vírgula direto: evita sobras de fração de centavo e "-R$ 0,00". Campos de valor vêm preenchidos com pontos de milhar (1.260.000,75).
 - Excluir projeto pede para digitar o nome dele.
 - Dois temas, **claro** (padrão) e **escuro**, trocados pelo botão sol/lua no topo, ao lado de Sair.
 - As janelas (modais) só fecham pelo X, Cancelar ou ao salvar; clicar fora não fecha.
@@ -55,7 +56,7 @@ Na criação do projeto: Data API ligada, **"Automatically expose new tables" de
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
-**Testes:** `npm run check` (tipos, verificador e 46 testes das contas). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
+**Testes:** `npm run check` (tipos, verificador e 71 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.

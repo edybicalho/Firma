@@ -14,6 +14,11 @@ export type Movement = {
 
 export const MAX_AMOUNT = 999_999_999_999.99;
 
+// Todas as contas são feitas em centavos inteiros: assim não sobra fração de centavo
+// (o computador erra contas com vírgula, como 0,1 + 0,2 = 0,30000000000000004).
+export const toCents = (value: number | string | null | undefined) => Math.round(Number(value ?? 0) * 100);
+export const fromCents = (cents: number) => cents / 100;
+
 // Dia de hoje no horário de Brasília, no formato AAAA-MM-DD
 export const todayIso = (now: Date = new Date()) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
@@ -41,13 +46,14 @@ export function parseAmount(raw: string): number | null {
     if (!/^\d+$/.test(text)) return null;
     normalized = text;
   }
-  const value = Math.round(Number(normalized) * 100) / 100;
+  const value = fromCents(toCents(normalized));
   if (!Number.isFinite(value) || value < 0 || value > MAX_AMOUNT) return null;
   return value;
 }
 
-// Valor para preencher o campo de digitação, no jeito brasileiro (1234,50)
-export const formatAmountInput = (value: number) => Number(value).toFixed(2).replace('.', ',');
+// Valor para preencher o campo de digitação, no jeito brasileiro (1.260.000,75)
+const inputFormat = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const formatAmountInput = (value: number) => inputFormat.format(Number(value));
 
 const byDateAsc = (a: Movement, b: Movement) =>
   `${a.recorded_at}${a.created_at}`.localeCompare(`${b.recorded_at}${b.created_at}`);
@@ -55,9 +61,9 @@ export const byDateDesc = (a: Movement, b: Movement) => byDateAsc(b, a);
 
 /** Movimento real de um lançamento: (entrada - entrada anterior) - (saída - saída anterior).
  *  Um "novo jogo" (nova base) tem movimento zero: ela só marca o novo ponto de partida. */
-export const netMovement = (current: Movement, previous?: Movement) => current.is_base ? 0 :
-  (Number(current.entry_total) - (previous ? Number(previous.entry_total) : 0)) -
-  (Number(current.exit_total) - (previous ? Number(previous.exit_total) : 0));
+export const netMovement = (current: Movement, previous?: Movement) => current.is_base ? 0 : fromCents(
+  (toCents(current.entry_total) - toCents(previous?.entry_total)) -
+  (toCents(current.exit_total) - toCents(previous?.exit_total)));
 
 /** Para cada lançamento, o seu movimento real (comparando com o anterior da mesma operação). */
 export function netById(movements: Movement[]): Map<string, number> {
@@ -78,18 +84,18 @@ export function netById(movements: Movement[]): Map<string, number> {
 /** Resultado de um projeto num dia: soma dos movimentos reais lançados naquele dia. */
 export function dayResult(movements: Movement[], net: Map<string, number>, projectId: string, day: string) {
   let total = 0;
-  for (const m of movements) if (m.project_id === projectId && m.recorded_at === day) total += net.get(m.id) ?? 0;
-  return Math.round(total * 100) / 100;
+  for (const m of movements) if (m.project_id === projectId && m.recorded_at === day) total += toCents(net.get(m.id));
+  return fromCents(total);
 }
 
 /** Resultado do dia de cada operação (ficha) de um projeto. Fichas sem lançamento no dia ficam de fora. */
 export function operationDayResults(movements: Movement[], net: Map<string, number>, projectId: string, day: string) {
-  const result = new Map<string, number>();
+  const cents = new Map<string, number>();
   for (const m of movements) {
     if (m.project_id !== projectId || m.recorded_at !== day) continue;
-    result.set(m.operation_id, Math.round(((result.get(m.operation_id) ?? 0) + (net.get(m.id) ?? 0)) * 100) / 100);
+    cents.set(m.operation_id, (cents.get(m.operation_id) ?? 0) + toCents(net.get(m.id)));
   }
-  return result;
+  return new Map([...cents].map(([op, c]) => [op, fromCents(c)]));
 }
 
 /** Último dia com lançamento em cada projeto. */
