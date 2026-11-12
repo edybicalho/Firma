@@ -130,7 +130,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     const projectOps = operations.filter((op) => op.project_id === pid);
     const next = projectOps.length ? Math.max(...projectOps.map((op) => op.operation_number)) + 1 : 1;
     setOpNumber(String(next));
-    setOpName('');
+    setOpName('Ficha');
     setOperationModal('add');
   };
 
