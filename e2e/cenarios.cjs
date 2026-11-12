@@ -121,6 +121,30 @@ const entrar = async (page) => { await page.waitForSelector('.project-tile', { t
     ok('Login com senha errada: diz que usuário ou senha estão incorretos', /incorret/i.test(await page.locator('.auth-error').innerText().catch(() => '')));
     await page.close(); }
 
+  // 9. Primeiro lançamento de uma ficha nova já vem como "Novo jogo"
+  { const banco = novoBanco(hoje); banco.operations.push({ id: 'o2', project_id: 'p1', operation_number: 2, name: 'Ficha' });
+    const page = await abrir(browser, banco); await entrar(page);
+    await page.locator('.ficha-card').nth(1).click(); await page.waitForTimeout(200);
+    ok('Ficha sem lançamento: "Novo jogo" já vem ligado', await page.locator('.base-toggle.on').count() === 1);
+    await page.locator('.inputs input').first().fill('5.000.000'); await page.locator('.inputs input').nth(1).fill('2.000.000');
+    await page.click('button.save'); await page.waitForTimeout(800);
+    const g = banco.gravados.at(-1);
+    ok('…e o primeiro lançamento é salvo como novo jogo (não soma no resultado do dia)', g && g.is_base === true && g.entry_total === 5000000, JSON.stringify(g));
+    ok('…depois disso, o "Novo jogo" volta a vir desligado', await page.locator('.base-toggle.on').count() === 0);
+    await page.locator('.ficha-card').first().click(); await page.waitForTimeout(200);
+    ok('Ficha que já tem lançamento: "Novo jogo" vem desligado', await page.locator('.base-toggle.on').count() === 0);
+    await page.close(); }
+
+  // 10. Dá para desligar no primeiro lançamento, se precisar
+  { const banco = novoBanco(hoje); banco.operations.push({ id: 'o2', project_id: 'p1', operation_number: 2, name: 'Ficha' });
+    const page = await abrir(browser, banco); await entrar(page);
+    await page.locator('.ficha-card').nth(1).click(); await page.click('.base-toggle');
+    await page.locator('.inputs input').first().fill('100'); await page.locator('.inputs input').nth(1).fill('10');
+    await page.click('button.save'); await page.waitForTimeout(800);
+    const g = banco.gravados.at(-1);
+    ok('Primeiro lançamento com "Novo jogo" desligado: salva como lançamento comum', g && !g.is_base, JSON.stringify(g));
+    await page.close(); }
+
   await browser.close();
   const falhas = resultados.filter((r) => !r).length;
   console.log(falhas ? `\n${falhas} problema(s) encontrado(s)` : '\nTUDO CERTO');

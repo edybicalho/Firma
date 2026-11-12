@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 out=$(mktemp -d)
 VITE_SUPABASE_URL=https://teste.supabase.co VITE_SUPABASE_ANON_KEY=chave-teste npx vite build --outDir "$out" >/dev/null
-(cd "$out" && python3 -m http.server 4173 --bind 127.0.0.1 >/dev/null 2>&1) &
+python3 -m http.server 4173 --bind 127.0.0.1 --directory "$out" >/dev/null 2>&1 &
 server=$!
 trap 'kill $server 2>/dev/null; rm -rf "$out"' EXIT
 sleep 1
