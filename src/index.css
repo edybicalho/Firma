@@ -530,3 +530,13 @@ html[data-theme=dark] .rl-row .sobra{color:#b8c0be}
   .report-day-values strong{font-size:clamp(13px,4vw,15px)}
 }
 html[data-theme=dark] .report-summary>div:nth-child(n){border-top-color:#3a4a2a}
+
+/* Botões de voltar ("Todos os projetos" / "Todos os relatórios") bem visíveis */
+.back-button{display:inline-flex;align-items:center;gap:8px;height:42px;margin-bottom:20px;padding:0 18px 0 14px;border:1px solid #8fbf45;border-radius:10px;background:#eef6e2;color:#3f6a08;font-size:14px;font-weight:700;box-shadow:0 2px 6px #4f7a0e1f;transition:background .15s,box-shadow .15s,transform .15s}
+.back-button svg{width:18px;height:18px}
+.back-button:hover{background:#e2efcf;box-shadow:0 4px 12px #4f7a0e2e;transform:translateX(-2px)}
+.back-button:active{transform:translateX(-2px) scale(.98)}
+.back-button:focus-visible{outline:3px solid #8fbf4580;outline-offset:2px}
+@media(max-width:800px){.back-button{width:100%;justify-content:center;height:46px;font-size:15px}}
+html[data-theme=dark] .back-button{border-color:#789d35;background:#c7f36b1a;color:#d9f99d;box-shadow:0 2px 8px #0006}
+html[data-theme=dark] .back-button:hover{background:#c7f36b29}
