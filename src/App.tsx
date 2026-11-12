@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Download, FileText, History, LayoutDashboard, LogOut, Menu, Moon, Pencil, Plus, RefreshCw, Save, Search, Settings2, StickyNote, Sun, TrendingUp, X, Trash2, Users } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { friendlyError, supabase } from '@/lib/supabase';
 import { emailToUsername } from '@/lib/types';
 import type { Profile } from '@/lib/types';
 import { Login, PendingAccess } from '@/Login';
@@ -54,8 +54,10 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
   const [theme, setTheme] = useState<Theme>(currentTheme);
   const toggleTheme = () => { const next: Theme = theme === 'dark' ? 'light' : 'dark'; applyTheme(next); setTheme(next); };
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const lastLoad = useRef(0);
+  const load = useCallback(async (silent = false) => {
+    lastLoad.current = Date.now();
+    if (!silent) setLoading(true);
     // Busca tudo em páginas (o Supabase entrega no máximo 1.000 linhas por vez)
     const [p, o, m] = await Promise.all([
       fetchAllPages<Project>((from, to) => supabase.from('projects').select('*').order('created_at').order('id').range(from, to)),
@@ -64,7 +66,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     ]);
     if (p.error || o.error || m.error) {
       // Em caso de falha, mantém os dados que já estavam na tela em vez de mostrar números pela metade
-      setMessage('Não foi possível carregar os dados. Verifique a internet e clique em Atualizar.');
+      if (!silent) setMessage('Não foi possível carregar os dados. Verifique a internet e clique em Atualizar.');
       setLoading(false);
       return;
     }
@@ -72,6 +74,13 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     setProjectId((current) => (p.data.some((project) => project.id === current) ? current : '')); setLoading(false);
   }, []);
   useEffect(() => { void load(); }, [load]);
+  // Ao voltar para o app (trocou de aba, desbloqueou o celular), busca os dados novos de outras pessoas
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === 'visible' && Date.now() - lastLoad.current > 20000) void load(true); };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => { document.removeEventListener('visibilitychange', refresh); window.removeEventListener('focus', refresh); };
+  }, [load]);
 
   const currentProject = projects.find((project) => project.id === projectId);
   const currentOperations = useMemo(() => operations.filter((operation) => operation.project_id === projectId), [operations, projectId]);
@@ -99,7 +108,8 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
   const entryProblem = entryInvalid ? 'Valor inválido. Use, por exemplo, 1.234,56' : !asBase && newEntry < 0 && entryNumber !== null ? `Não pode ser menor que o lançamento anterior (${money(Number(previous?.entry_total ?? 0))}). Se começou um novo jogo, ligue "Novo jogo".` : '';
   const exitProblem = exitInvalid ? 'Valor inválido. Use, por exemplo, 1.234,56' : !asBase && newExit < 0 && exitNumber !== null ? `Não pode ser menor que o lançamento anterior (${money(Number(previous?.exit_total ?? 0))}). Se começou um novo jogo, ligue "Novo jogo".` : '';
   const canSave = !saving && entryNumber !== null && exitNumber !== null && !entryProblem && !exitProblem;
-  const today = todayIso();
+  const [today, setToday] = useState(todayIso);
+  useEffect(() => { const timer = window.setInterval(() => setToday(todayIso()), 30000); return () => window.clearInterval(timer); }, []);
   const projectTotal = useMemo(() => dayResult(movements, net, projectId, today), [movements, net, projectId, today]);
   const projectResult = projectTotal / 2;
   // Resultado do dia de cada ficha do projeto selecionado
@@ -121,7 +131,8 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     setConsultId(''); setDatesOpen(false); setAsBase(false);
     if (previous) { setEntry(formatAmountInput(previous.entry_total)); setExit(formatAmountInput(previous.exit_total)); }
     else { setEntry(''); setExit(''); }
-  }, [previous, projectId, operationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previous?.id, projectId, operationId]);
 
   const openAddOperation = (pid: string) => {
     setOpProjectId(pid);
@@ -148,7 +159,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     if (!confirm(`Tem certeza que deseja excluir esta operação e os ${count} lançamento(s) dela?`)) return;
     setSaving(true);
     const { error } = await supabase.from('operations').delete().eq('id', id);
-    if (error) setMessage('Não foi possível excluir a operação.');
+    if (error) setMessage(friendlyError(error, 'Não foi possível excluir a operação.'));
     else { setMessage('Operação excluída.'); await load(); }
     setSaving(false);
     window.setTimeout(() => setMessage(''), 3000);
@@ -160,7 +171,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     if (!confirm('Tem certeza que deseja excluir este lançamento?')) return;
     setSaving(true);
     const { error } = await supabase.from('movements').delete().eq('id', id);
-    if (error) setMessage('Não foi possível excluir o lançamento.');
+    if (error) setMessage(friendlyError(error, 'Não foi possível excluir o lançamento.'));
     else { setMessage('Lançamento excluído.'); await load(); }
     setSaving(false);
     window.setTimeout(() => setMessage(''), 3000);
@@ -191,7 +202,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     if (!newProjectName.trim()) return;
     setSaving(true);
     const { error } = await supabase.from('projects').insert({ name: newProjectName.trim() });
-    if (error) setMessage('Não foi possível criar o projeto.');
+    if (error) setMessage(friendlyError(error, 'Não foi possível criar o projeto.'));
     else { setMessage('Projeto criado com sucesso.'); setProjectModal(false); await load(); }
     setSaving(false);
     window.setTimeout(() => setMessage(''), 3000);
@@ -207,7 +218,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     setSaving(true);
     const notes = notesText.trim();
     const { error } = await supabase.from('projects').update({ notes: notes || null }).eq('id', notesProjectId);
-    if (error) setMessage('Não foi possível salvar as observações.');
+    if (error) setMessage(friendlyError(error, 'Não foi possível salvar as observações.'));
     else { setMessage('Observações salvas.'); setNotesProjectId(''); await load(); }
     setSaving(false);
     window.setTimeout(() => setMessage(''), 3000);
@@ -231,7 +242,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     if (typed.trim() !== name.trim()) { setMessage('O nome digitado não confere. Nada foi excluído.'); window.setTimeout(() => setMessage(''), 3000); return; }
     setSaving(true);
     const { error } = await supabase.from('projects').delete().eq('id', id);
-    if (error) setMessage('Não foi possível excluir o projeto.');
+    if (error) setMessage(friendlyError(error, 'Não foi possível excluir o projeto.'));
     else { setMessage('Projeto excluído.'); if (projectId === id) setProjectId(''); await load(); }
     setSaving(false);
     window.setTimeout(() => setMessage(''), 3000);
@@ -242,7 +253,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     if (!name || name === projects.find((project) => project.id === id)?.name) { setEditingProjectId(''); return; }
     setSaving(true);
     const { error } = await supabase.from('projects').update({ name }).eq('id', id);
-    if (error) setMessage('Não foi possível salvar o nome do projeto.'); else { setMessage('Projeto atualizado com sucesso.'); await load(); }
+    if (error) setMessage(friendlyError(error, 'Não foi possível salvar o nome do projeto.')); else { setMessage('Projeto atualizado com sucesso.'); await load(); }
     setEditingProjectId('');
     setSaving(false);
     window.setTimeout(() => setMessage(''), 3000);
@@ -253,8 +264,17 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     if (asBase && !confirm('Salvar como NOVO JOGO?\n\nEste valor não vai somar no resultado do dia. Os próximos lançamentos desta ficha serão comparados com ele.')) return;
     if (!asBase && previous && previous.recorded_at === today && newEntry === 0 && newExit === 0 && !confirm('Os valores são iguais aos do último lançamento de hoje. Salvar mesmo assim?')) return;
     setSaving(true);
-    const { error } = await supabase.from('movements').insert({ project_id: currentProject.id, operation_id: currentOperation.id, entry_total: entryNumber, exit_total: exitNumber, recorded_at: todayIso(), ...(asBase ? { is_base: true } : {}) });
-    if (error) setMessage(asBase && error.message.includes('is_base') ? 'Para usar "Novo jogo", o banco precisa ser atualizado (arquivo 20261113120000_nova_base.sql).' : 'Não foi possível salvar este lançamento.'); else { setMessage(asBase ? 'Novo jogo salvo. Ele não soma no resultado do dia.' : 'Lançamento salvo no histórico.'); setAsBase(false); await load(); }
+    // Alguém lançou nesta ficha enquanto a tela estava aberta? Então atualiza e pede para conferir.
+    const latest = await supabase.from('movements').select('id').eq('operation_id', currentOperation.id).order('recorded_at', { ascending: false }).order('created_at', { ascending: false }).order('id').limit(1);
+    if (!latest.error && (latest.data?.[0]?.id ?? null) !== (previous?.id ?? null)) {
+      await load(true);
+      setMessage('Alguém acabou de lançar nesta ficha. Os valores foram atualizados: confira e salve de novo.');
+      setSaving(false); window.setTimeout(() => setMessage(''), 6000);
+      return;
+    }
+    // A data do lançamento é a do servidor (horário de Brasília), não a do aparelho
+    const { error } = await supabase.from('movements').insert({ project_id: currentProject.id, operation_id: currentOperation.id, entry_total: entryNumber, exit_total: exitNumber, ...(asBase ? { is_base: true } : {}) });
+    if (error) setMessage(asBase && error.message.includes('is_base') ? 'Para usar "Novo jogo", o banco precisa ser atualizado (arquivo 20261113120000_nova_base.sql).' : friendlyError(error, 'Não foi possível salvar este lançamento.')); else { setMessage(asBase ? 'Novo jogo salvo. Ele não soma no resultado do dia.' : 'Lançamento salvo no histórico.'); setAsBase(false); await load(); }
     setSaving(false); window.setTimeout(() => setMessage(''), 3000);
   };
 
@@ -268,7 +288,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
   const reportProject = projects.find((project) => project.id === reportProjectId);
   const reportsView = reportProject ? <div className="reports-view"><ReportDetail project={reportProject} operations={operations} movements={movements} net={net} onBack={() => setReportProjectId('')} /></div> : <div className="reports-view"><div className="reports-grid">{filteredProjects.map((project) => {const lastDay = lastUpdateByProject[project.id]; const total = lastDay ? dayResult(movements, net, project.id, lastDay) : 0; const half = total / 2; return <section className={`report-card ${total < 0 ? 'negative' : ''}`} key={project.id}><div className="report-card-head"><div><h3>{project.name}</h3><span>{project.status}</span></div><button className={`notes-button ${project.notes ? 'has-notes' : ''}`} title={project.notes ?? 'Adicionar observações'} onClick={() => openNotes(project)}><StickyNote size={14} /> {project.notes ? 'Ver observações' : 'Observações'}</button></div>{project.notes && <p className="report-notes">{project.notes}</p>}<div className="report-result single"><div><span>Último resultado ÷ 2{lastDay ? ` · ${date(lastDay)}` : ''}</span><strong>{money(half)}</strong></div></div><button type="button" className="ghost report-open" onClick={() => { setReportProjectId(project.id); window.scrollTo(0, 0); }}><History size={14} /> Ver histórico</button></section>;})}</div>{projects.length === 0 && <p className="empty">Nenhum projeto cadastrado.</p>}</div>;
 
-  const settingsView = <div className="settings-view"><div className="settings-top-actions"><button className="add" style={{ maxWidth: 220 }} onClick={() => void openAddProject()}><Plus size={15} /> Adicionar projeto</button><button className="ghost" title="Baixa uma planilha com todos os lançamentos, para guardar como cópia de segurança" onClick={downloadBackup}><Download size={14} /> Baixar planilha de lançamentos</button></div><div className="settings-list">{filteredProjects.map((project) => <div className={`settings-block ${expandedProject === project.id ? 'expanded' : ''}`} key={project.id}><div className="settings-row" onClick={() => setExpandedProject(expandedProject === project.id ? '' : project.id)}><div className="settings-row-info">{editingProjectId === project.id ? <input autoFocus className="inline-edit" value={inlineProjectName} onChange={(event) => setInlineProjectName(event.target.value)} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); if (event.key === 'Escape') setEditingProjectId(''); }} onBlur={() => void saveProjectName(project.id)} /> : <b onClick={(event) => { event.stopPropagation(); setEditingProjectId(project.id); setInlineProjectName(project.name); }}>{project.name}</b>}<span>{operations.filter((op) => op.project_id === project.id).length} operações</span></div><div className="settings-row-actions"><button className="ghost danger" onClick={(event) => { event.stopPropagation(); void deleteProject(project.id); }}><Trash2 size={14} /> Excluir projeto</button><button className="ghost" onClick={(event) => { event.stopPropagation(); setExpandedProject(expandedProject === project.id ? '' : project.id); }}>{expandedProject === project.id ? 'Recolher' : 'Operações'}</button></div></div>{expandedProject === project.id && <div className="settings-ops"><div className="settings-ops-head"><small>Operações de {project.name}</small><button className="add-operation" onClick={() => void openAddOperation(project.id)}><Plus size={15} /> Nova operação</button></div><div className="settings-ops-list">{operations.filter((op) => op.project_id === project.id).length ? operations.filter((op) => op.project_id === project.id).map((op) => <div className="settings-op-row" key={op.id}><div className="settings-op-info"><span className="op-num">{String(op.operation_number).padStart(2, '0')}</span><b>{op.name}</b></div><div className="settings-op-actions"><button className="ghost" onClick={() => void openEditOperation(op.id)}><Pencil size={13} /> Editar</button><button className="ghost danger" onClick={() => void deleteOperation(op.id)}><Trash2 size={13} /> Excluir</button></div></div>) : <p className="empty" style={{ padding: '12px 0' }}>Nenhuma operação cadastrada.</p>}</div></div>}</div>)}</div>{projects.length === 0 && <p className="empty">Nenhum projeto cadastrado.</p>}</div>;
+  const settingsView = <div className="settings-view"><div className="settings-top-actions"><button className="add" style={{ maxWidth: 220 }} onClick={() => void openAddProject()}><Plus size={15} /> Adicionar projeto</button><button className="ghost" title="Baixa uma planilha com todos os lançamentos, para guardar como cópia de segurança" onClick={downloadBackup}><Download size={14} /> Baixar planilha de lançamentos</button></div><div className="settings-list">{filteredProjects.map((project) => <div className={`settings-block ${expandedProject === project.id ? 'expanded' : ''}`} key={project.id}><div className="settings-row" onClick={() => setExpandedProject(expandedProject === project.id ? '' : project.id)}><div className="settings-row-info">{editingProjectId === project.id ? <input autoFocus className="inline-edit" maxLength={200} value={inlineProjectName} onChange={(event) => setInlineProjectName(event.target.value)} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); if (event.key === 'Escape') setEditingProjectId(''); }} onBlur={() => void saveProjectName(project.id)} /> : <b onClick={(event) => { event.stopPropagation(); setEditingProjectId(project.id); setInlineProjectName(project.name); }}>{project.name}</b>}<span>{operations.filter((op) => op.project_id === project.id).length} operações</span></div><div className="settings-row-actions"><button className="ghost danger" onClick={(event) => { event.stopPropagation(); void deleteProject(project.id); }}><Trash2 size={14} /> Excluir projeto</button><button className="ghost" onClick={(event) => { event.stopPropagation(); setExpandedProject(expandedProject === project.id ? '' : project.id); }}>{expandedProject === project.id ? 'Recolher' : 'Operações'}</button></div></div>{expandedProject === project.id && <div className="settings-ops"><div className="settings-ops-head"><small>Operações de {project.name}</small><button className="add-operation" onClick={() => void openAddOperation(project.id)}><Plus size={15} /> Nova operação</button></div><div className="settings-ops-list">{operations.filter((op) => op.project_id === project.id).length ? operations.filter((op) => op.project_id === project.id).map((op) => <div className="settings-op-row" key={op.id}><div className="settings-op-info"><span className="op-num">{String(op.operation_number).padStart(2, '0')}</span><b>{op.name}</b></div><div className="settings-op-actions"><button className="ghost" onClick={() => void openEditOperation(op.id)}><Pencil size={13} /> Editar</button><button className="ghost danger" onClick={() => void deleteOperation(op.id)}><Trash2 size={13} /> Excluir</button></div></div>) : <p className="empty" style={{ padding: '12px 0' }}>Nenhuma operação cadastrada.</p>}</div></div>}</div>)}</div>{projects.length === 0 && <p className="empty">Nenhum projeto cadastrado.</p>}</div>;
 
   const auditView = <div className="settings-view"><AuditLog projects={projects} operations={operations} /></div>;
 
@@ -282,11 +302,12 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
   {view === 'settings' && isAdmin && settingsView}
   {view === 'users' && isAdmin && usersView}
   {view === 'audit' && isAdmin && auditView}
-{operationModal && <div className="modal-backdrop"><section className="edit-modal"><div className="modal-heading"><div><small>{operationModal === 'add' ? 'NOVA OPERAÇÃO' : 'EDITAR OPERAÇÃO'}</small><h3>{operationModal === 'add' ? 'Adicionar operação' : 'Editar operação'}</h3></div><button className="close-modal" onClick={() => setOperationModal(null)}><X size={18} /></button></div><div className="modal-grid"><label>Número da operação<input inputMode="numeric" value={opNumber} onChange={(event) => setOpNumber(event.target.value)} /></label><label>Nome da operação<input value={opName} onChange={(event) => setOpName(event.target.value)} /></label></div><div className="modal-actions"><button className="ghost" onClick={() => setOperationModal(null)}>Cancelar</button><button className="save modal-save" disabled={saving || !opName.trim() || !opNumber} onClick={() => void saveOperation()}><Save size={15} /> {saving ? 'Salvando...' : operationModal === 'add' ? 'Criar operação' : 'Salvar alterações'}</button></div></section></div>}{projectModal && <div className="modal-backdrop"><section className="edit-modal"><div className="modal-heading"><div><small>NOVO PROJETO</small><h3>Adicionar projeto</h3></div><button className="close-modal" onClick={() => setProjectModal(false)}><X size={18} /></button></div><label>Nome do projeto<input value={newProjectName} onChange={(event) => setNewProjectName(event.target.value)} placeholder="Ex: Contrato Porto Sul" /></label><div className="modal-actions"><button className="ghost" onClick={() => setProjectModal(false)}>Cancelar</button><button className="save modal-save" disabled={saving || !newProjectName.trim()} onClick={() => void saveProject()}><Save size={15} /> {saving ? 'Salvando...' : 'Criar projeto'}</button></div></section></div>}{notesProjectId && <div className="modal-backdrop"><section className="edit-modal"><div className="modal-heading"><div><small>OBSERVAÇÕES</small><h3>{projects.find((project) => project.id === notesProjectId)?.name}</h3></div><button className="close-modal" aria-label="Fechar" onClick={() => setNotesProjectId('')}><X size={18} /></button></div><label htmlFor="project-notes">Anotações sobre o projeto<textarea id="project-notes" autoFocus rows={7} value={notesText} onChange={(event) => setNotesText(event.target.value)} placeholder="Escreva aqui" /></label><div className="modal-actions"><button className="ghost" onClick={() => setNotesProjectId('')}>Cancelar</button><button className="save modal-save" disabled={saving} onClick={() => void saveNotes()}><Save size={15} /> {saving ? 'Salvando...' : 'Salvar observações'}</button></div></section></div>}</div>;
+{operationModal && <div className="modal-backdrop"><section className="edit-modal"><div className="modal-heading"><div><small>{operationModal === 'add' ? 'NOVA OPERAÇÃO' : 'EDITAR OPERAÇÃO'}</small><h3>{operationModal === 'add' ? 'Adicionar operação' : 'Editar operação'}</h3></div><button className="close-modal" onClick={() => setOperationModal(null)}><X size={18} /></button></div><div className="modal-grid"><label>Número da operação<input inputMode="numeric" value={opNumber} onChange={(event) => setOpNumber(event.target.value)} /></label><label>Nome da operação<input maxLength={200} value={opName} onChange={(event) => setOpName(event.target.value)} /></label></div><div className="modal-actions"><button className="ghost" onClick={() => setOperationModal(null)}>Cancelar</button><button className="save modal-save" disabled={saving || !opName.trim() || !opNumber} onClick={() => void saveOperation()}><Save size={15} /> {saving ? 'Salvando...' : operationModal === 'add' ? 'Criar operação' : 'Salvar alterações'}</button></div></section></div>}{projectModal && <div className="modal-backdrop"><section className="edit-modal"><div className="modal-heading"><div><small>NOVO PROJETO</small><h3>Adicionar projeto</h3></div><button className="close-modal" onClick={() => setProjectModal(false)}><X size={18} /></button></div><label>Nome do projeto<input maxLength={200} value={newProjectName} onChange={(event) => setNewProjectName(event.target.value)} placeholder="Ex: Contrato Porto Sul" /></label><div className="modal-actions"><button className="ghost" onClick={() => setProjectModal(false)}>Cancelar</button><button className="save modal-save" disabled={saving || !newProjectName.trim()} onClick={() => void saveProject()}><Save size={15} /> {saving ? 'Salvando...' : 'Criar projeto'}</button></div></section></div>}{notesProjectId && <div className="modal-backdrop"><section className="edit-modal"><div className="modal-heading"><div><small>OBSERVAÇÕES</small><h3>{projects.find((project) => project.id === notesProjectId)?.name}</h3></div><button className="close-modal" aria-label="Fechar" onClick={() => setNotesProjectId('')}><X size={18} /></button></div><label htmlFor="project-notes">Anotações sobre o projeto<textarea id="project-notes" autoFocus rows={7} maxLength={10000} value={notesText} onChange={(event) => setNotesText(event.target.value)} placeholder="Escreva aqui" /></label><div className="modal-actions"><button className="ghost" onClick={() => setNotesProjectId('')}>Cancelar</button><button className="save modal-save" disabled={saving} onClick={() => void saveNotes()}><Save size={15} /> {saving ? 'Salvando...' : 'Salvar observações'}</button></div></section></div>}</div>;
 }
 function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
+  const [profileFailed, setProfileFailed] = useState(false);
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -297,13 +318,22 @@ function App() {
   const userId = session?.user.id;
   const loadProfile = useCallback(async () => {
     if (!userId) { setProfile(null); return; }
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (error) { setProfileFailed(true); return; } // sem internet: não muda nada, só avisa
+    setProfileFailed(false);
     setProfile((data as Profile | null) ?? null);
   }, [userId]);
   useEffect(() => { setProfile(undefined); void loadProfile(); }, [loadProfile]);
+  // Ao voltar para o app, confere de novo se o acesso continua ativo
+  useEffect(() => {
+    const recheck = () => { if (document.visibilityState === 'visible') void loadProfile(); };
+    document.addEventListener('visibilitychange', recheck);
+    return () => document.removeEventListener('visibilitychange', recheck);
+  }, [loadProfile]);
 
   const signOut = () => { void supabase.auth.signOut(); };
 
+  if (session && profile === undefined && profileFailed) return <div className="auth-screen"><section className="auth-card"><div className="auth-heading"><small>SEM CONEXÃO</small><h1>Não foi possível conectar</h1><p>Confira a internet do aparelho e tente de novo.</p></div><button className="save auth-submit" type="button" onClick={() => void loadProfile()}>Tentar de novo</button><button className="auth-switch" type="button" onClick={signOut}>Sair</button></section></div>;
   if (session === undefined || (session && profile === undefined)) return <div className="auth-screen"><p className="muted">Carregando...</p></div>;
   if (!session) return <Login />;
   if (!profile || !profile.active) return <PendingAccess username={profile?.username ?? emailToUsername(session.user.email ?? '')} onRetry={() => void loadProfile()} onSignOut={signOut} />;

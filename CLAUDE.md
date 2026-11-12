@@ -31,6 +31,13 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 - Valores digitados no jeito brasileiro (`1.234,56`; `1.500` = mil e quinhentos). Valor inválido é recusado com aviso, nunca vira zero. O acumulado novo não pode ser menor que o anterior, **exceto com o botão "Novo jogo"** ligado.
 - **Novo jogo** (botão no quadro de novo lançamento; por dentro é uma "nova base"): aceita qualquer número e ele vira o novo ponto de partida da ficha; o movimento desse lançamento é zero (não soma no resultado do dia) e os próximos comparam com ele. Fica marcado no banco em `movements.is_base` e aparece como "novo jogo" no histórico, na lista do calendário, na planilha e no Registro. O botão desliga sozinho depois de salvar e ao trocar de ficha.
 - **Contas sempre em centavos inteiros** (`toCents`/`fromCents` em `src/lib/calc.ts`), nunca somando valores com vírgula direto: evita sobras de fração de centavo e "-R$ 0,00". Campos de valor vêm preenchidos com pontos de milhar (1.260.000,75). Entrada e Saída mostram o valor do último lançamento; ao tocar, o campo esvazia para digitar o novo (o antigo fica clarinho no fundo) e, se sair sem digitar, o antigo volta.
+- **Uso real, com várias pessoas e celular** (testado em `e2e/cenarios.cjs`):
+  - Antes de salvar, o app confere no banco se alguém lançou na mesma ficha; se sim, atualiza os valores e pede para conferir (não grava por cima).
+  - A **data do lançamento é a do servidor** (o app não manda `recorded_at`; o banco usa a data de Brasília), então celular com data errada não atrapalha.
+  - A data de "hoje" na tela vira sozinha à meia-noite (confere a cada 30 s).
+  - Ao voltar para o app (trocar de aba, desbloquear o celular), busca os dados novos (no máximo a cada 20 s) e reconfere se o acesso continua ativo; o que estava digitado não se perde.
+  - Sem internet: mensagens dizem que é a conexão (`friendlyError` em `src/lib/supabase.ts`); se falhar ao abrir, mostra "Não foi possível conectar" com "Tentar de novo" (nunca "usuário desativado").
+  - Campos de texto têm limite (nomes 200, observações 10.000, nome de pessoa 100), iguais aos do banco.
 - Excluir projeto pede para digitar o nome dele.
 - Dois temas, **claro** (padrão) e **escuro**, trocados pelo botão sol/lua no topo, ao lado de Sair.
 - As janelas (modais) só fecham pelo X, Cancelar ou ao salvar; clicar fora não fecha.
@@ -56,7 +63,7 @@ Na criação do projeto: Data API ligada, **"Automatically expose new tables" de
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
-**Testes:** `npm run check` (tipos, verificador e 71 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
+**Testes:** `npm run test:telas` (11 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 79 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
