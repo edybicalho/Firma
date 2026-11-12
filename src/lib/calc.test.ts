@@ -156,7 +156,7 @@ describe('lançamentos no mesmo dia', () => {
   });
 });
 
-describe('nova base', () => {
+describe('novo jogo (nova base)', () => {
   const base = (m: Movement): Movement => ({ ...m, is_base: true });
   const all = [
     mv('a1', 'op1', 5000, 2000, '2026-11-10'),

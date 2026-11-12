@@ -28,8 +28,8 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 - **Operador** vê só Painel e Relatórios; pode lançar, excluir **só lançamentos do dia** (horário de Brasília) e escrever observações.
 - **Administrador** vê tudo. Ninguém altera, desativa ou exclui o próprio acesso. Sempre existe pelo menos um administrador ativo (o banco bloqueia o contrário).
 - Senha mínima de **8** caracteres (tela e banco). Trocar a senha ou desativar alguém encerra as sessões abertas dessa pessoa.
-- Valores digitados no jeito brasileiro (`1.234,56`; `1.500` = mil e quinhentos). Valor inválido é recusado com aviso, nunca vira zero. O acumulado novo não pode ser menor que o anterior, **exceto com o botão "Nova base"** ligado.
-- **Nova base** (botão no quadro de novo lançamento): aceita qualquer número e ele vira o novo ponto de partida da ficha; o movimento desse lançamento é zero (não soma no resultado do dia) e os próximos comparam com ele. Fica marcado no banco em `movements.is_base` e aparece como "nova base" no histórico, na lista do calendário, na planilha e no Registro. O botão desliga sozinho depois de salvar e ao trocar de ficha.
+- Valores digitados no jeito brasileiro (`1.234,56`; `1.500` = mil e quinhentos). Valor inválido é recusado com aviso, nunca vira zero. O acumulado novo não pode ser menor que o anterior, **exceto com o botão "Novo jogo"** ligado.
+- **Novo jogo** (botão no quadro de novo lançamento; por dentro é uma "nova base"): aceita qualquer número e ele vira o novo ponto de partida da ficha; o movimento desse lançamento é zero (não soma no resultado do dia) e os próximos comparam com ele. Fica marcado no banco em `movements.is_base` e aparece como "novo jogo" no histórico, na lista do calendário, na planilha e no Registro. O botão desliga sozinho depois de salvar e ao trocar de ficha.
 - Excluir projeto pede para digitar o nome dele.
 - Dois temas, **claro** (padrão) e **escuro**, trocados pelo botão sol/lua no topo, ao lado de Sair.
 - As janelas (modais) só fecham pelo X, Cancelar ou ao salvar; clicar fora não fecha.
@@ -45,7 +45,7 @@ Migrações em `supabase/migrations/`, a rodar **nesta ordem** no SQL Editor (to
 3. `20261107190000_login_and_roles.sql`: tabela `profiles`, funções de usuários e as regras de acesso (RLS).
 4. `20261112120000_registro_alteracoes.sql`: registro de alterações (`audit_log`).
 5. `20261112130000_seguranca.sql`: validação de valores, número de operação único por projeto, quem lançou (`created_by`), senha mínima 8, último administrador, encerrar sessões, e corte de permissões de visitantes. **Precisa rodar depois da 3**, porque substitui funções dela.
-6. `20261113120000_nova_base.sql`: coluna `is_base` em `movements` (botão "Nova base").
+6. `20261113120000_nova_base.sql`: coluna `is_base` em `movements` (botão "Novo jogo").
 
 Depois: `select public.create_first_admin('admin', 'senha', 'Nome');` e desligar os cadastros públicos em Authentication.
 
