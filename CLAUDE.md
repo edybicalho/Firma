@@ -29,8 +29,15 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 - **Administrador** vê tudo. Ninguém altera, desativa ou exclui o próprio acesso. Sempre existe pelo menos um administrador ativo (o banco bloqueia o contrário).
 - Senha mínima de **8** caracteres (tela e banco). Trocar a senha ou desativar alguém encerra as sessões abertas dessa pessoa.
 - Valores digitados no jeito brasileiro (`1.234,56`; `1.500` = mil e quinhentos). Valor inválido é recusado com aviso, nunca vira zero. O acumulado novo não pode ser menor que o anterior, **exceto com o botão "Novo jogo"** ligado.
-- **Novo jogo** (botão no quadro de novo lançamento; por dentro é uma "nova base"): aceita qualquer número e ele vira o novo ponto de partida da ficha; o movimento desse lançamento é zero (não soma no resultado do dia) e os próximos comparam com ele. Fica marcado no banco em `movements.is_base` e aparece como "novo jogo" no histórico, na lista do calendário, na planilha e no Registro. O botão desliga sozinho depois de salvar e ao trocar de ficha.
+- **Novo jogo** (botão no quadro de novo lançamento; por dentro é uma "nova base"): aceita qualquer número e ele vira o novo ponto de partida da ficha; o movimento desse lançamento é zero (não soma no resultado do dia) e os próximos comparam com ele. Fica marcado no banco em `movements.is_base` e aparece como "novo jogo" no histórico, na lista do calendário, na planilha e no Registro. O botão desliga sozinho depois de salvar e ao trocar de ficha. **No primeiro lançamento de uma ficha ele já vem ligado** (com a marca "1º lançamento"), para o valor que o contador já tem virar o ponto de partida em vez de entrar inteiro no resultado do dia; dá para desligar.
 - **Contas sempre em centavos inteiros** (`toCents`/`fromCents` em `src/lib/calc.ts`), nunca somando valores com vírgula direto: evita sobras de fração de centavo e "-R$ 0,00". Campos de valor vêm preenchidos com pontos de milhar (1.260.000,75). Entrada e Saída mostram o valor do último lançamento; ao tocar, o campo esvazia para digitar o novo (o antigo fica clarinho no fundo) e, se sair sem digitar, o antigo volta.
+- **Uso real, com várias pessoas e celular** (testado em `e2e/cenarios.cjs`):
+  - Antes de salvar, o app confere no banco se alguém lançou na mesma ficha; se sim, atualiza os valores e pede para conferir (não grava por cima).
+  - A **data do lançamento é a do servidor** (o app não manda `recorded_at`; o banco usa a data de Brasília), então celular com data errada não atrapalha.
+  - A data de "hoje" na tela vira sozinha à meia-noite (confere a cada 30 s).
+  - Ao voltar para o app (trocar de aba, desbloquear o celular), busca os dados novos (no máximo a cada 20 s) e reconfere se o acesso continua ativo; o que estava digitado não se perde.
+  - Sem internet: mensagens dizem que é a conexão (`friendlyError` em `src/lib/supabase.ts`); se falhar ao abrir, mostra "Não foi possível conectar" com "Tentar de novo" (nunca "usuário desativado").
+  - Campos de texto têm limite (nomes 200, observações 10.000, nome de pessoa 100), iguais aos do banco.
 - Excluir projeto pede para digitar o nome dele.
 - Dois temas, **claro** (padrão) e **escuro**, trocados pelo botão sol/lua no topo, ao lado de Sair.
 - As janelas (modais) só fecham pelo X, Cancelar ou ao salvar; clicar fora não fecha.
@@ -56,14 +63,14 @@ Na criação do projeto: Data API ligada, **"Automatically expose new tables" de
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
-**Testes:** `npm run check` (tipos, verificador e 71 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
+**Testes:** `npm run test:telas` (16 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 79 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
 - As 6 migrações rodaram com sucesso no Supabase real (a 6, nova base / "Novo jogo", rodada em novembro de 2026), o primeiro administrador foi criado e a conferência de segurança deu ✅ nas 12 linhas. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
 - **Endereços:** app oficial https://firma-6l0.pages.dev (branch `main`); site de teste https://teste.firma-6l0.pages.dev (branch `teste`, atualiza sozinho a cada envio; o dono só dá F5). Projeto no Cloudflare: `firma-6l0`. Os endereços com código (`xxxxxxxx.firma-6l0.pages.dev`) são de uma publicação específica e não mudam.
 - App publicado no **Cloudflare Pages** a partir da `main`, com `VITE_SUPABASE_URL` (só o endereço base, sem `/rest/v1/`), `VITE_SUPABASE_ANON_KEY` (chave `sb_publishable_...`) e `NODE_VERSION=22`. O login funcionou de verdade.
-- Ainda **sem dados reais**: antes, mudar para o plano Pro e ligar "Prevent use of leaked passwords".
+- Ainda **sem dados reais**: os dados atuais são de **treino** (a equipe está aprendendo a usar, com usuários operadores). Antes dos dados reais: preparar o arquivo de limpeza (apaga projetos, fichas, lançamentos e o registro do treino; mantém o administrador; testar no PostgreSQL local antes), mudar para o plano Pro e ligar "Prevent use of leaked passwords".
 
 ## Próximos passos combinados
 

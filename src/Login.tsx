@@ -16,7 +16,7 @@ export function Login() {
     if (!username.trim() || !password) { setError('Preencha usuário e senha.'); return; }
     setBusy(true);
     const { error: signInError } = await supabase.auth.signInWithPassword({ email: usernameToEmail(username), password });
-    if (signInError) setError('Usuário ou senha incorretos.');
+    if (signInError) setError(/invalid login credentials/i.test(signInError.message) ? 'Usuário ou senha incorretos.' : /fetch|network/i.test(signInError.message) || !navigator.onLine ? 'Sem conexão com a internet. Confira a conexão e tente de novo.' : 'Não foi possível entrar agora. Tente de novo em instantes.');
     setBusy(false);
   };
 

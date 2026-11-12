@@ -159,7 +159,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
         <div className="modal-backdrop">
           <section className="edit-modal">
             <div className="modal-heading"><div><small>NOVO USUÁRIO</small><h3>Cadastrar usuário</h3></div><button className="close-modal" aria-label="Fechar" onClick={() => setCreating(false)}><X size={18} /></button></div>
-            <label htmlFor="new-user-name">Nome da pessoa<input id="new-user-name" value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Ex: João Silva" /></label>
+            <label htmlFor="new-user-name">Nome da pessoa<input id="new-user-name" maxLength={100} value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Ex: João Silva" /></label>
             <div className="modal-grid">
               <label htmlFor="new-user-login">Usuário (login)<input id="new-user-login" autoCapitalize="none" spellCheck={false} value={newUsername} onChange={(event) => setNewUsername(event.target.value.toLowerCase())} placeholder="joao.silva" /></label>
               <label htmlFor="new-user-password">Senha<input id="new-user-password" type="text" autoComplete="off" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder={`Mínimo de ${PASSWORD_MIN} caracteres`} /></label>
@@ -180,7 +180,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
         <div className="modal-backdrop">
           <section className="edit-modal">
             <div className="modal-heading"><div><small>EDITAR USUÁRIO</small><h3>{editUser.name}</h3></div><button className="close-modal" aria-label="Fechar" onClick={() => setEditUser(null)}><X size={18} /></button></div>
-            <label htmlFor="edit-user-name">Nome da pessoa<input id="edit-user-name" value={editName} onChange={(event) => setEditName(event.target.value)} /></label>
+            <label htmlFor="edit-user-name">Nome da pessoa<input id="edit-user-name" maxLength={100} value={editName} onChange={(event) => setEditName(event.target.value)} /></label>
             <label htmlFor="edit-user-login">Usuário (login)<input id="edit-user-login" autoCapitalize="none" spellCheck={false} value={editUsername} onChange={(event) => setEditUsername(event.target.value.toLowerCase())} /></label>
             {editUsername.trim().toLowerCase() !== editUser.username && <p className="settings-desc">A pessoa passa a entrar com <b>{editUsername.trim().toLowerCase() || '...'}</b>. A senha continua a mesma.</p>}
             {formError && <p className="auth-error" role="alert">{formError}</p>}
