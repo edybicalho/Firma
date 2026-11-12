@@ -55,6 +55,14 @@ with checks(ordem, item, ok, o_que_fazer) as (
   select 12, 'Número de operação único por projeto',
     exists (select 1 from pg_indexes where indexname = 'operations_project_number_key'),
     'Há operações com número repetido no mesmo projeto. Corrija os números em Configurações e rode a migração 5 de novo.'
+  union all
+  select 13, 'Banco confere o acumulado e salva uma pessoa de cada vez por ficha',
+    exists (select 1 from pg_trigger where tgname = 'movements_check_accumulated' and not tgisinternal),
+    'Rode a migração 7 (20261114120000_conferencia_acumulado.sql).'
+  union all
+  select 14, 'Botão "Novo jogo" ativo no banco',
+    exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'movements' and column_name = 'is_base'),
+    'Rode a migração 6 (20261113120000_nova_base.sql).'
 )
 select ordem as "nº", case when ok then '✅' else '❌' end as "situação", item as "conferência",
        case when ok then '' else o_que_fazer end as "o que fazer"

@@ -61,7 +61,7 @@ Depois: `select public.create_first_admin('admin', 'senha', 'Nome');` e desligar
 
 Na criação do projeto: Data API ligada, **"Automatically expose new tables" desligada** (a migração 5 libera cada tabela explicitamente) e "Enable automatic RLS" ligada. O `npm run test:db` testa os dois jeitos.
 
-**Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as linhas; o `npm run test:db` também roda essa conferência.
+**Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as 14 linhas; o `npm run test:db` também roda essa conferência.
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
@@ -69,7 +69,7 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
-- As migrações 1 a 6 rodaram com sucesso no Supabase real (a 7, conferência do acumulado, ainda precisa ser rodada pelo dono), o primeiro administrador foi criado e a conferência de segurança deu ✅ nas 12 linhas. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
+- As 7 migrações rodaram no Supabase real; a conferência de segurança deu **✅ nas 14 linhas** (confirmado pelo dono em novembro de 2026), o primeiro administrador foi criado e a conferência de segurança deu ✅ nas 12 linhas. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
 - **Endereços:** app oficial https://firma-6l0.pages.dev (branch `main`); site de teste https://teste.firma-6l0.pages.dev (branch `teste`, atualiza sozinho a cada envio; o dono só dá F5). Projeto no Cloudflare: `firma-6l0`. Os endereços com código (`xxxxxxxx.firma-6l0.pages.dev`) são de uma publicação específica e não mudam.
 - App publicado no **Cloudflare Pages** a partir da `main`, com `VITE_SUPABASE_URL` (só o endereço base, sem `/rest/v1/`), `VITE_SUPABASE_ANON_KEY` (chave `sb_publishable_...`) e `NODE_VERSION=22`. O login funcionou de verdade.
 - Ainda **sem dados reais**: os dados atuais são de **treino** (a equipe está aprendendo a usar, com usuários operadores). Antes dos dados reais: preparar o arquivo de limpeza (apaga projetos, fichas, lançamentos e o registro do treino; mantém o administrador; testar no PostgreSQL local antes), mudar para o plano Pro e ligar "Prevent use of leaked passwords".
