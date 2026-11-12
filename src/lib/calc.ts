@@ -65,6 +65,31 @@ export const netMovement = (current: Movement, previous?: Movement) => current.i
   (toCents(current.entry_total) - toCents(previous?.entry_total)) -
   (toCents(current.exit_total) - toCents(previous?.exit_total)));
 
+export type Diff = { entry: number; exit: number };
+
+/** Para cada lançamento, quanto sobrou de entrada e de saída desde o anterior da mesma ficha
+ *  (a diferença de cada um). Num "novo jogo" as duas sobras são zero. */
+export function diffsById(movements: Movement[]): Map<string, Diff> {
+  const result = new Map<string, Diff>();
+  const byOperation = new Map<string, Movement[]>();
+  for (const m of movements) {
+    const list = byOperation.get(m.operation_id) ?? [];
+    list.push(m);
+    byOperation.set(m.operation_id, list);
+  }
+  for (const list of byOperation.values()) {
+    list.sort(byDateAsc);
+    list.forEach((m, i) => {
+      const prev = list[i - 1];
+      result.set(m.id, m.is_base ? { entry: 0, exit: 0 } : {
+        entry: fromCents(toCents(m.entry_total) - toCents(prev?.entry_total)),
+        exit: fromCents(toCents(m.exit_total) - toCents(prev?.exit_total)),
+      });
+    });
+  }
+  return result;
+}
+
 /** Para cada lançamento, o seu movimento real (comparando com o anterior da mesma operação). */
 export function netById(movements: Movement[]): Map<string, number> {
   const result = new Map<string, number>();
@@ -143,6 +168,7 @@ export function movementsCsv(
   operationLabel: (id: string) => string,
 ) {
   const net = netById(movements);
+  const diffs = diffsById(movements);
   // Textos que começam com = + - @ viram fórmula no Excel; o apóstrofo impede isso
   const cell = (value: string) => `"${(/^[=+\-@\t\r]/.test(value) ? `'${value}` : value).replace(/"/g, '""')}"`;
   const num = (value: number) => Number(value).toFixed(2).replace('.', ',');
@@ -152,9 +178,11 @@ export function movementsCsv(
     m.recorded_at.split('-').reverse().join('/'),
     num(m.entry_total),
     num(m.exit_total),
+    num(diffs.get(m.id)?.entry ?? 0),
+    num(diffs.get(m.id)?.exit ?? 0),
     num(net.get(m.id) ?? 0),
     m.is_base ? 'Sim' : 'Não',
   ].join(';'));
-  const header = ['Projeto', 'Operação', 'Data', 'Entrada acumulada', 'Saída acumulada', 'Movimento líquido', 'Novo jogo'].join(';');
+  const header = ['Projeto', 'Operação', 'Data', 'Entrada acumulada', 'Saída acumulada', 'Sobra de entrada', 'Sobra de saída', 'Movimento líquido', 'Novo jogo'].join(';');
   return `\uFEFF${[header, ...rows].join('\r\n')}\r\n`;
 }

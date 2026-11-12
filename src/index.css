@@ -505,3 +505,28 @@ html[data-theme=dark] .rl-header,html[data-theme=dark] .rl-row .num::before{colo
   .rl-row .num strong{display:inline}
   .rl-row .num .base-tag{margin-left:auto}
 }
+/* Relatórios: colunas de sobra de entrada e de saída */
+.report-summary{grid-template-columns:repeat(3,1fr)}
+.report-summary>div:nth-child(n+4){border-top:1px solid #dbe8c6}
+.report-summary>div:nth-child(4){border-left:0}
+.report-summary.neg>div:nth-child(n+4){border-top-color:#f1d2d4}
+.rl-row{grid-template-columns:1.3fr .5fr 1fr 1fr 1fr 1fr 1fr}
+.rl-row .sobra{color:#4a5452}
+@media(max-width:800px){
+  .report-summary{grid-template-columns:1fr 1fr}
+  .report-summary>div:nth-child(n){border-left:0;border-top:1px solid #dbe8c6}
+  .report-summary>div:nth-child(-n+2){border-top:0}
+  .report-summary>div:nth-child(even){border-left:1px solid #dbe8c6}
+  .rl-row{grid-template-columns:1fr auto}
+}
+html[data-theme=dark] .report-summary>div:nth-child(n){border-color:#3a4a2a}
+html[data-theme=dark] .rl-row .sobra{color:#b8c0be}
+@media(max-width:800px){
+  .report-summary{grid-template-columns:1fr}
+  .report-summary>div:nth-child(n){flex-direction:row;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-left:0;border-top:1px solid #dbe8c6}
+  .report-summary>div:first-child{border-top:0}
+  .report-summary.neg>div:nth-child(n){border-top-color:#f1d2d4}
+  .report-summary strong{font-size:clamp(15px,4.6vw,19px);white-space:nowrap}
+  .report-day-values strong{font-size:clamp(13px,4vw,15px)}
+}
+html[data-theme=dark] .report-summary>div:nth-child(n){border-top-color:#3a4a2a}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, reportDays, sumResults, addDays, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
+import { fromCents, toCents, dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, diffsById, reportDays, sumResults, addDays, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 describe('parseAmount: leitura dos valores digitados', () => {
@@ -105,8 +105,8 @@ describe('planilha de lançamentos (cópia de segurança)', () => {
   const csv = movementsCsv(movements, () => 'Obra "Norte"', () => '01 — Fundação');
   it('abre no Excel em português (acentos, ponto e vírgula, vírgula decimal)', () => {
     expect(csv.startsWith('﻿Projeto;Operação;Data')).toBe(true);
-    expect(csv).toContain('"Obra ""Norte""";"01 — Fundação";10/11/2026;1000,50;400,00;600,50;Não');
-    expect(csv).toContain(';11/11/2026;1500,00;500,00;399,50;Não');
+    expect(csv).toContain('"Obra ""Norte""";"01 — Fundação";10/11/2026;1000,50;400,00;1000,50;400,00;600,50;Não');
+    expect(csv).toContain(';11/11/2026;1500,00;500,00;499,50;100,00;399,50;Não');
   });
   it('nomes que começam com = não viram fórmula no Excel', () => {
     const evil = movementsCsv(movements, () => '=HYPERLINK("http://x")', () => '+1');
@@ -177,7 +177,7 @@ describe('novo jogo (nova base)', () => {
   });
   it('a planilha indica qual lançamento é nova base', () => {
     const csv = movementsCsv(all, () => 'P', () => 'O');
-    expect(csv).toContain(';11/11/2026;100,00;50,00;0,00;Sim');
+    expect(csv).toContain(';11/11/2026;100,00;50,00;0,00;0,00;0,00;Sim');
   });
 });
 
@@ -212,5 +212,27 @@ describe('histórico de relatórios (dia a dia)', () => {
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
     expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
     expect(addDays('2026-11-12', -29)).toBe('2026-10-14');
+  });
+});
+
+describe('sobra de entrada e de saída de cada lançamento', () => {
+  const all = [
+    mv('a1', 'op1', 1000000.5, 400000.25, '2026-11-05'),
+    mv('a2', 'op1', 1500000.75, 500000.5, '2026-11-10'),
+    { ...mv('a3', 'op1', 100, 50, '2026-11-11'), is_base: true },
+    mv('a4', 'op1', 400, 90, '2026-11-12'),
+  ];
+  const diffs = diffsById(all);
+  const net = netById(all);
+  it('é a diferença para o lançamento anterior da mesma ficha', () => {
+    expect(diffs.get('a1')).toEqual({ entry: 1000000.5, exit: 400000.25 });
+    expect(diffs.get('a2')).toEqual({ entry: 500000.25, exit: 100000.25 });
+    expect(diffs.get('a4')).toEqual({ entry: 300, exit: 40 });
+  });
+  it('novo jogo: sobras zero', () => {
+    expect(diffs.get('a3')).toEqual({ entry: 0, exit: 0 });
+  });
+  it('movimento = sobra de entrada - sobra de saída, sempre', () => {
+    for (const m of all) expect(net.get(m.id)).toBe(fromCents(toCents(diffs.get(m.id)!.entry) - toCents(diffs.get(m.id)!.exit)));
   });
 });

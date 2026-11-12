@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { addDays, money, reportDays, sumResults, todayIso } from '@/lib/calc';
+import { addDays, diffsById, fromCents, money, reportDays, sumResults, toCents, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 type Project = { id: string; name: string };
@@ -30,6 +30,8 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
   const from = period === '7' ? addDays(today, -6) : period === '30' ? addDays(today, -29) : period === 'mes' ? `${today.slice(0, 8)}01` : undefined;
   const days = useMemo(() => reportDays(movements, net, project.id, { operationId: operationId || undefined, from, to: today }), [movements, net, project.id, operationId, from, today]);
   const total = sumResults(days);
+  const diffs = useMemo(() => diffsById(movements), [movements]);
+  const sobra = days.flatMap((d) => d.launches).reduce((acc, m) => { const d = diffs.get(m.id); return { entry: acc.entry + toCents(d?.entry), exit: acc.exit + toCents(d?.exit) }; }, { entry: 0, exit: 0 });
   const launches = days.reduce((count, d) => count + d.launches.length, 0);
   const choose = (next: Period) => { setPeriod(next); setShown(PAGE); };
 
@@ -51,6 +53,8 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
       <div className={`report-summary ${tone(total)}`}>
         <div><small>Resultado do período</small><strong>{money(total)}</strong></div>
         <div><small>÷ 2</small><strong>{money(total / 2)}</strong></div>
+        <div className="plain"><small>Sobra de entrada</small><strong>{money(fromCents(sobra.entry))}</strong></div>
+        <div className="plain"><small>Sobra de saída</small><strong>{money(fromCents(sobra.exit))}</strong></div>
         <div className="plain"><small>Dias</small><strong>{days.length}</strong></div>
         <div className="plain"><small>Lançamentos</small><strong>{launches}</strong></div>
       </div>
@@ -65,7 +69,7 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
             </div>
           </div>
           <div className="rl-table">
-            <div className="rl-row rl-header"><span>Ficha</span><span>Hora</span><span className="num">Entrada</span><span className="num">Saída</span><span className="num">Movimento</span></div>
+            <div className="rl-row rl-header"><span>Ficha</span><span>Hora</span><span className="num">Entrada</span><span className="num">Saída</span><span className="num">Sobra entrada</span><span className="num">Sobra saída</span><span className="num">Movimento</span></div>
             {d.launches.map((m) => {
               const value = net.get(m.id) ?? 0;
               return (
@@ -74,6 +78,8 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
                   <span className="rl-hora" data-label="Hora">{hour(m.created_at)}</span>
                   <span className="num" data-label="Entrada">{money(m.entry_total)}</span>
                   <span className="num" data-label="Saída">{money(m.exit_total)}</span>
+                  <span className="num sobra" data-label="Sobra de entrada">{money(diffs.get(m.id)?.entry ?? 0)}</span>
+                  <span className="num sobra" data-label="Sobra de saída">{money(diffs.get(m.id)?.exit ?? 0)}</span>
                   <span className="num" data-label="Movimento"><strong className={tone(value)}>{money(value)}</strong>{m.is_base && <em className="base-tag">novo jogo</em>}</span>
                 </div>
               );
