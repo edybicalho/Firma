@@ -334,3 +334,33 @@ html[data-theme=dark] .tile-foot{border-color:#333c3d}
 html[data-theme=dark] .back-button{color:#c7f36b}
 html[data-theme=dark] .back-button:hover{background:#c7f36b14}
 @media(max-width:800px){.user-chip{display:none}.profile{gap:8px}}
+
+/* Calendário do quadro "Lançamento anterior": consulta de datas antigas */
+.calendar-picker{position:relative;display:inline-flex}
+.calendar-button{display:grid;place-items:center;width:34px;height:34px;border:1px solid #d6dcdc;border-radius:7px;background:#fff;color:#4f7a0e;transition:border-color .15s,background .15s}
+.calendar-button:hover{border-color:#8fbf45;background:#4f7a0e0f}
+.back-latest{height:34px;margin-top:4px}
+html[data-theme=dark] .calendar-button{border-color:#3a4243;background:#1a1e20;color:#c7f36b}
+html[data-theme=dark] .calendar-button:hover{border-color:#789d35;background:#c7f36b14}
+.calendar-button.open{border-color:#8fbf45;background:#4f7a0e14}
+.date-list{position:absolute;right:0;top:42px;z-index:6;width:280px;max-width:calc(100vw - 40px);border:1px solid #d6dcdc;border-radius:9px;background:#fff;box-shadow:0 14px 34px #0f171a26;overflow:hidden}
+.date-list-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e3e7e7;font-size:12px}
+.date-list-items{max-height:300px;overflow:auto;padding:6px}
+.date-month{display:block;padding:8px 8px 4px;color:#6b7476;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.date-item{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:6px;background:none;color:#1c211c;font-size:12px;text-align:left}
+.date-item:hover{background:#f1f4f2}
+.date-item.active{background:#4f7a0e14;box-shadow:inset 0 0 0 1px #8fbf45}
+.date-item span{display:flex;align-items:center;gap:6px;font:500 12px 'JetBrains Mono'}
+.date-item em{font:600 9px 'DM Sans';font-style:normal;text-transform:uppercase;letter-spacing:.06em;color:#4f7a0e;background:#4f7a0e14;border-radius:4px;padding:2px 5px}
+.date-item strong{color:#4f7a0e;font:600 12px 'JetBrains Mono'}
+.date-item strong.neg{color:#a8000a}
+html[data-theme=dark] .calendar-button.open{border-color:#789d35;background:#c7f36b14}
+html[data-theme=dark] .date-list{border-color:#3a4243;background:#202628;box-shadow:0 14px 34px #0009}
+html[data-theme=dark] .date-list-head{border-color:#333c3d;color:#f2f4f2}
+html[data-theme=dark] .date-month{color:#899294}
+html[data-theme=dark] .date-item{color:#e0e5e2}
+html[data-theme=dark] .date-item:hover{background:#2a3133}
+html[data-theme=dark] .date-item.active{background:#c7f36b14;box-shadow:inset 0 0 0 1px #789d35}
+html[data-theme=dark] .date-item em{color:#d9f99d;background:#c7f36b18}
+html[data-theme=dark] .date-item strong{color:#c7f36b}
+html[data-theme=dark] .date-item strong.neg{color:#ff969c}

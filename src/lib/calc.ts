@@ -89,6 +89,11 @@ export function operationDayResults(movements: Movement[], net: Map<string, numb
   return result;
 }
 
+/** Último lançamento feito no dia escolhido ou, se não houver, o último antes dele. A lista vem do mais novo para o mais antigo. */
+export function movementOnOrBefore(historyNewestFirst: Movement[], day: string) {
+  return historyNewestFirst.find((m) => m.recorded_at <= day);
+}
+
 /** Último dia com lançamento em cada projeto. */
 export function lastDayByProject(movements: Movement[]) {
   const acc: Record<string, string> = {};

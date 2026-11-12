@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
+import { dayResult, formatAmountInput, lastDayByProject, movementOnOrBefore, movementsCsv, netById, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 describe('parseAmount: leitura dos valores digitados', () => {
@@ -137,5 +137,28 @@ describe('resultado do dia por ficha', () => {
   });
   it('a soma das fichas é o resultado do dia do projeto', () => {
     expect([...results.values()].reduce((a, b) => a + b, 0)).toBe(dayResult(movements, net, 'p1', '2026-11-12'));
+  });
+});
+
+describe('consulta de lançamento por data (calendário)', () => {
+  const history = [
+    mv('a3', 'op1', 1800, 700, '2026-11-12'),
+    mv('a2b', 'op1', 1600, 650, '2026-11-10', '15:00'),
+    mv('a2', 'op1', 1500, 500, '2026-11-10', '09:00'),
+    mv('a1', 'op1', 1000, 400, '2026-11-05'),
+  ];
+  it('dia com lançamento: mostra o último daquele dia', () => {
+    expect(movementOnOrBefore(history, '2026-11-10')?.id).toBe('a2b');
+  });
+  it('dia sem lançamento: mostra o último antes dele', () => {
+    expect(movementOnOrBefore(history, '2026-11-08')?.id).toBe('a1');
+  });
+  it('antes do primeiro lançamento: não mostra nada', () => {
+    expect(movementOnOrBefore(history, '2026-11-01')).toBeUndefined();
+  });
+  it('resultado do dia da ficha soma os lançamentos daquele dia', () => {
+    const all = [...history].reverse().map((m) => ({ ...m }));
+    const net = netById(all);
+    expect(operationDayResults(all, net, 'p1', '2026-11-10').get('op1')).toBe((1600 - 1000) - (650 - 400));
   });
 });
