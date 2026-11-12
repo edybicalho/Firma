@@ -6,7 +6,7 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 
 - Cada **projeto** tem **operações** ("fichas", com número e nome).
 - Em cada operação o usuário lança valores **acumulados** de entrada e saída (o total até agora, não o do dia). O movimento real é a diferença para o lançamento anterior da mesma operação.
-- **Painel** (título "PONTOS"): lançamento novo, lançamento anterior, "Resultado do dia" (e ÷ 2) e a consulta de lançamentos.
+- **Painel** (título "PONTOS"): abre numa **página de seleção de projeto** (quadros com nº de fichas, resultado do dia e última alteração). Ao tocar num projeto, entra nele: fichas em quadros (cada uma com o resultado do dia; tocar seleciona), lançamento novo, lançamento anterior, "Resultado do dia do projeto" (e ÷ 2) e a consulta de lançamentos. "← Todos os projetos" volta para a seleção.
 - **Relatórios**: um card por projeto com o **último resultado ÷ 2** (resultado do último dia com lançamento) e um botão de **Observações** ao lado do nome.
 - **Configurações** (só administrador): criar, renomear e excluir projetos e operações.
 - **Usuários** (só administrador, aba ao lado de Configurações): criar usuário, editar nome e login, trocar senha, tornar administrador ou operador, desativar e excluir.
