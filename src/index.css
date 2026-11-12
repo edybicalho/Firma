@@ -86,3 +86,24 @@
 }
 .report-result.single strong{font-size:16px}
 .report-result.single{grid-template-columns:1fr;border-top:1px solid #3a4243}
+
+/* Mensagem de valor inválido no lançamento */
+.inputs label small.field-error{color:#ff969c}
+.inputs input[aria-invalid="true"]{color:#ffb4b8}
+
+/* Botões do topo de Configurações */
+.settings-top-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin-bottom:20px}
+.settings-top-actions .add{margin-top:0}
+.settings-top-actions .ghost{height:36px}
+
+/* Registro de alterações */
+.audit-tools{display:flex;gap:8px;flex-shrink:0}
+.audit-tools select{height:34px;color:#e8ebe9;background:#1d2224;border:1px solid #41494a;border-radius:5px;padding:0 10px;font-size:12px}
+.audit-tools .ghost{height:34px}
+.audit-row{justify-content:flex-start;gap:16px}
+.audit-meta{display:flex;flex-direction:column;gap:3px;min-width:150px}
+.audit-meta b{font-size:12px}
+.audit-meta small{color:#899294;font:500 11px 'JetBrains Mono'}
+.audit-text{margin:0;color:#c3c9c8;font-size:12px;line-height:1.45}
+.audit-more{height:36px;margin:14px auto 0}
+@media(max-width:800px){.audit-row{flex-direction:column;gap:6px}.audit-tools{width:100%}.audit-tools select{flex:1}}

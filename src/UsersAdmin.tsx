@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, UserCheck, UserX, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { USERNAME_PATTERN } from '@/lib/types';
+import { PASSWORD_MIN, USERNAME_PATTERN } from '@/lib/types';
 import type { Profile, Role } from '@/lib/types';
 
 const rpcError = (message: string, fallback: string) => {
   if (message.includes('usuario_existe')) return 'Já existe um usuário com esse nome de login.';
   if (message.includes('usuario_invalido')) return 'O usuário deve ter de 3 a 30 caracteres: letras minúsculas, números, ponto, hífen ou sublinhado.';
-  if (message.includes('senha_curta')) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (message.includes('senha_curta')) return `A senha precisa ter pelo menos ${PASSWORD_MIN} caracteres.`;
   if (message.includes('sem_permissao')) return 'Só administradores podem fazer isso.';
   if (message.includes('nome_vazio')) return 'Informe o nome da pessoa.';
   if (message.includes('proprio_usuario')) return 'Você não pode excluir o próprio usuário.';
+  if (message.includes('ultimo_admin')) return 'O sistema precisa ter pelo menos um administrador com acesso.';
+  if (message.includes('usuario_nao_encontrado')) return 'Usuário não encontrado. Atualize a página.';
   return fallback;
 };
 
@@ -31,19 +33,19 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase.from('profiles').select('*').order('created_at');
     if (error) notify('Não foi possível carregar os usuários.');
-    setUsers((data ?? []) as Profile[]);
+    else setUsers((data ?? []) as Profile[]);
     setLoading(false);
-  };
-  useEffect(() => { void loadUsers(); }, []);
+  }, [notify]);
+  useEffect(() => { void loadUsers(); }, [loadUsers]);
 
   const updateUser = async (user: Profile, changes: Partial<Pick<Profile, 'role' | 'active'>>, done: string) => {
     setBusyId(user.id);
     const { error } = await supabase.from('profiles').update(changes).eq('id', user.id);
-    if (error) notify('Não foi possível atualizar o usuário.');
+    if (error) notify(rpcError(error.message, 'Não foi possível atualizar o usuário.'));
     else { notify(done); await loadUsers(); }
     setBusyId('');
   };
@@ -57,7 +59,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
     const username = newUsername.trim().toLowerCase();
     if (!newName.trim()) { setFormError('Informe o nome da pessoa.'); return; }
     if (!USERNAME_PATTERN.test(username)) { setFormError(rpcError('usuario_invalido', '')); return; }
-    if (newPassword.length < 6) { setFormError(rpcError('senha_curta', '')); return; }
+    if (newPassword.length < PASSWORD_MIN) { setFormError(rpcError('senha_curta', '')); return; }
     setSaving(true);
     const { error } = await supabase.rpc('admin_create_user', { p_username: username, p_password: newPassword, p_name: newName.trim(), p_role: newRole });
     setSaving(false);
@@ -74,7 +76,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
 
   const savePassword = async () => {
     if (!passwordUser) return;
-    if (resetPassword.length < 6) { setFormError(rpcError('senha_curta', '')); return; }
+    if (resetPassword.length < PASSWORD_MIN) { setFormError(rpcError('senha_curta', '')); return; }
     setSaving(true);
     const { error } = await supabase.rpc('admin_set_password', { p_user_id: passwordUser.id, p_password: resetPassword });
     setSaving(false);
@@ -160,7 +162,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
             <label htmlFor="new-user-name">Nome da pessoa<input id="new-user-name" value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Ex: João Silva" /></label>
             <div className="modal-grid">
               <label htmlFor="new-user-login">Usuário (login)<input id="new-user-login" autoCapitalize="none" spellCheck={false} value={newUsername} onChange={(event) => setNewUsername(event.target.value.toLowerCase())} placeholder="joao.silva" /></label>
-              <label htmlFor="new-user-password">Senha<input id="new-user-password" type="text" autoComplete="off" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Mínimo de 6 caracteres" /></label>
+              <label htmlFor="new-user-password">Senha<input id="new-user-password" type="text" autoComplete="off" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder={`Mínimo de ${PASSWORD_MIN} caracteres`} /></label>
             </div>
             <label htmlFor="new-user-role">Tipo de acesso
               <select id="new-user-role" value={newRole} onChange={(event) => setNewRole(event.target.value as Role)}>
@@ -192,7 +194,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
           <section className="edit-modal">
             <div className="modal-heading"><div><small>TROCAR SENHA</small><h3>{passwordUser.name}</h3></div><button className="close-modal" aria-label="Fechar" onClick={() => setPasswordUser(null)}><X size={18} /></button></div>
             <p className="settings-desc">Usuário: <b>{passwordUser.username}</b>. Passe a nova senha para a pessoa; ela usa no próximo login.</p>
-            <label htmlFor="reset-password">Nova senha<input id="reset-password" type="text" autoComplete="off" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} placeholder="Mínimo de 6 caracteres" /></label>
+            <label htmlFor="reset-password">Nova senha<input id="reset-password" type="text" autoComplete="off" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} placeholder={`Mínimo de ${PASSWORD_MIN} caracteres`} /></label>
             {formError && <p className="auth-error" role="alert">{formError}</p>}
             <div className="modal-actions"><button className="ghost" onClick={() => setPasswordUser(null)}>Cancelar</button><button className="save modal-save" disabled={saving} onClick={() => void savePassword()}><Save size={15} /> {saving ? 'Salvando...' : 'Salvar senha'}</button></div>
           </section>
