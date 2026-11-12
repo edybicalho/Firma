@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
+import { dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, reportDays, sumResults, addDays, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 describe('parseAmount: leitura dos valores digitados', () => {
@@ -178,5 +178,39 @@ describe('novo jogo (nova base)', () => {
   it('a planilha indica qual lançamento é nova base', () => {
     const csv = movementsCsv(all, () => 'P', () => 'O');
     expect(csv).toContain(';11/11/2026;100,00;50,00;0,00;Sim');
+  });
+});
+
+describe('histórico de relatórios (dia a dia)', () => {
+  const all = [
+    mv('a1', 'op1', 1000, 400, '2026-11-05'),
+    mv('a2', 'op1', 1500, 500, '2026-11-10', '09:00'),
+    mv('a3', 'op1', 1600, 650, '2026-11-10', '15:00'),
+    mv('b1', 'op2', 200, 50, '2026-11-10', '10:00'),
+    mv('b2', 'op2', 300, 60, '2026-11-12'),
+    mv('x1', 'op9', 999, 0, '2026-11-10', '10:00', 'p2'),
+  ];
+  const net = netById(all);
+  it('agrupa por dia, do mais novo para o mais antigo, com o resultado de cada dia', () => {
+    const days = reportDays(all, net, 'p1');
+    expect(days.map((d) => d.day)).toEqual(['2026-11-12', '2026-11-10', '2026-11-05']);
+    expect(days[1].result).toBe(400 + (-50) + 150);
+    expect(days[1].launches.map((m) => m.id)).toEqual(['a3', 'b1', 'a2']);
+  });
+  it('filtra por ficha e por período', () => {
+    expect(reportDays(all, net, 'p1', { operationId: 'op2' }).map((d) => d.day)).toEqual(['2026-11-12', '2026-11-10']);
+    expect(reportDays(all, net, 'p1', { from: '2026-11-06', to: '2026-11-11' }).map((d) => d.day)).toEqual(['2026-11-10']);
+  });
+  it('não mistura outros projetos', () => {
+    expect(reportDays(all, net, 'p1').flatMap((d) => d.launches).some((m) => m.project_id === 'p2')).toBe(false);
+  });
+  it('resultado do período é a soma exata dos dias', () => {
+    const days = reportDays(all, net, 'p1');
+    expect(sumResults(days)).toBe(600 + 500 + 90);
+  });
+  it('conta de datas atravessa mês e ano', () => {
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
+    expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
+    expect(addDays('2026-11-12', -29)).toBe('2026-10-14');
   });
 });

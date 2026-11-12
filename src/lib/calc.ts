@@ -98,6 +98,37 @@ export function operationDayResults(movements: Movement[], net: Map<string, numb
   return new Map([...cents].map(([op, c]) => [op, fromCents(c)]));
 }
 
+/** Soma (ou subtrai) dias de uma data AAAA-MM-DD. */
+export function addDays(day: string, n: number) {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+export type ReportDay = { day: string; result: number; launches: Movement[] };
+
+/** Histórico de um projeto, dia a dia (do mais novo para o mais antigo), para a tela de Relatórios.
+ *  Pode filtrar por ficha e por período (datas inclusivas). */
+export function reportDays(movements: Movement[], net: Map<string, number>, projectId: string, filter: { operationId?: string; from?: string; to?: string } = {}): ReportDay[] {
+  const days = new Map<string, { cents: number; launches: Movement[] }>();
+  for (const m of movements) {
+    if (m.project_id !== projectId) continue;
+    if (filter.operationId && m.operation_id !== filter.operationId) continue;
+    if (filter.from && m.recorded_at < filter.from) continue;
+    if (filter.to && m.recorded_at > filter.to) continue;
+    const entry = days.get(m.recorded_at) ?? { cents: 0, launches: [] };
+    entry.cents += toCents(net.get(m.id));
+    entry.launches.push(m);
+    days.set(m.recorded_at, entry);
+  }
+  return [...days.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([day, { cents, launches }]) => ({ day, result: fromCents(cents), launches: launches.sort(byDateDesc) }));
+}
+
+/** Soma exata (em centavos) dos resultados de vários dias. */
+export const sumResults = (days: ReportDay[]) => fromCents(days.reduce((total, d) => total + toCents(d.result), 0));
+
 /** Último dia com lançamento em cada projeto. */
 export function lastDayByProject(movements: Movement[]) {
   const acc: Record<string, string> = {};
