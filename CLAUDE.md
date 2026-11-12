@@ -57,6 +57,7 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
 - As 5 migrações rodaram com sucesso, o primeiro administrador foi criado e a conferência de segurança deu ✅ nas 12 linhas. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
+- **Endereços:** app oficial https://firma-6l0.pages.dev (branch `main`); site de teste https://teste.firma-6l0.pages.dev (branch `teste`, atualiza sozinho a cada envio; o dono só dá F5). Projeto no Cloudflare: `firma-6l0`. Os endereços com código (`xxxxxxxx.firma-6l0.pages.dev`) são de uma publicação específica e não mudam.
 - App publicado no **Cloudflare Pages** a partir da `main`, com `VITE_SUPABASE_URL` (só o endereço base, sem `/rest/v1/`), `VITE_SUPABASE_ANON_KEY` (chave `sb_publishable_...`) e `NODE_VERSION=22`. O login funcionou de verdade.
 - Ainda **sem dados reais**: antes, mudar para o plano Pro e ligar "Prevent use of leaked passwords".
 
@@ -72,7 +73,7 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 
 - O dono não é programador: explique em linguagem simples, sem jargão.
 - **Envio automático (autorizado pelo dono):** depois de testar (`npm run check`, e `npm run test:db` se mexer no banco), faça commit e `git push` sem pedir permissão, **sempre na versão fixa `teste`**, nunca direto na `main` e sem criar outras versões (o dono não quer várias versões de teste).
-- **Uma versão de teste só:** a branch `teste` tem endereço fixo no Cloudflare (`https://teste.<projeto>.pages.dev`). Existe **um único pedido de junção** `teste` → `main`; se não houver um aberto, abra. Passe ao dono o link do pedido e lembre do endereço de teste.
+- **Uma versão de teste só:** a branch `teste` tem endereço fixo no Cloudflare (https://teste.firma-6l0.pages.dev). Existe **um único pedido de junção** `teste` → `main`; se não houver um aberto, abra. Passe ao dono o link do pedido e lembre do endereço de teste.
 - **Juntar na `main` (o app oficial) é decisão do dono:** ele clica em Merge no GitHub. O Cloudflare publica sozinho em uns 2 minutos. Depois de juntar, a `teste` continua existindo: antes da próxima mudança, atualize a `teste` com a `main` (`git merge origin/main`) e siga trabalhando nela.
 - **Mudanças no banco não são automáticas:** quando houver arquivo novo em `supabase/migrations/`, avise o dono e passe o link "raw" para ele rodar no SQL Editor, conferindo com `supabase/conferencia_seguranca.sql`.
 - O endereço de teste usa o **mesmo banco** do app oficial: avise para testar com dados de teste e apagar depois.
