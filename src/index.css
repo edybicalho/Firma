@@ -540,3 +540,17 @@ html[data-theme=dark] .report-summary>div:nth-child(n){border-top-color:#3a4a2a}
 @media(max-width:800px){.back-button{width:100%;justify-content:center;height:46px;font-size:15px}}
 html[data-theme=dark] .back-button{border-color:#789d35;background:#c7f36b1a;color:#d9f99d;box-shadow:0 2px 8px #0006}
 html[data-theme=dark] .back-button:hover{background:#c7f36b29}
+
+/* Página de projetos: resultado do dia e ÷ 2 lado a lado */
+.tile-values{display:flex;width:100%;gap:0}
+.tile-values>span{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.tile-values .tile-half{padding-left:14px;border-left:1px solid #e3e7e7;align-items:flex-end}
+.tile-values strong{font-size:clamp(15px,1.6vw,20px);white-space:nowrap}
+@media(max-width:800px){.tile-values strong{font-size:clamp(15px,5vw,20px)}}
+html[data-theme=dark] .tile-values .tile-half{border-color:#333c3d}
+.tile-values{flex-direction:column;gap:6px}
+.tile-values>span{flex-direction:row;justify-content:space-between;align-items:baseline;gap:10px}
+.tile-values .tile-half{padding:6px 0 0;border-left:0;border-top:1px solid #e3e7e7;align-items:baseline}
+.tile-values strong{font-size:clamp(16px,4.6vw,20px)}
+@media(min-width:801px){.tile-values strong{font-size:19px}}
+html[data-theme=dark] .tile-values .tile-half{border-top-color:#333c3d}
