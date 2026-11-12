@@ -63,6 +63,11 @@ with checks(ordem, item, ok, o_que_fazer) as (
   select 14, 'Botão "Novo jogo" ativo no banco',
     exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'movements' and column_name = 'is_base'),
     'Rode a migração 6 (20261113120000_nova_base.sql).'
+  union all
+  select 15, 'Último acesso dos usuários visível só para administradores',
+    exists (select 1 from pg_proc where proname = 'admin_list_users' and pronamespace = 'public'::regnamespace)
+    and not has_function_privilege('anon', 'public.admin_list_users()', 'execute'),
+    'Rode a migração 8 (20261115120000_ultimo_acesso.sql).'
 )
 select ordem as "nº", case when ok then '✅' else '❌' end as "situação", item as "conferência",
        case when ok then '' else o_que_fazer end as "o que fazer"

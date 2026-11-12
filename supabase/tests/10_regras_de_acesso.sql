@@ -128,6 +128,12 @@ select tests.fails($$delete from public.audit_log$$, 'administrador apagar o reg
 select tests.fails($$update public.audit_log set username = 'x'$$, 'administrador alterar o registro', 'permission denied');
 select tests.fails($$insert into public.audit_log (table_name, action) values ('x', 'y')$$, 'administrador inventar registro', 'permission denied');
 select tests.fails($$truncate public.movements$$, 'esvaziar a tabela de lançamentos', 'permission denied');
+reset role;
+update auth.users set last_sign_in_at = now() - interval '2 days' where email = 'joao@acumula.local';
+set role authenticated;
+select tests.check((select count(*) = 3 from public.admin_list_users()), 'administrador vê a lista de usuários com último acesso');
+select tests.check((select last_sign_in_at is not null from public.admin_list_users() where username = 'joao'), 'último acesso do operador aparece');
+select tests.check((select last_sign_in_at is null from public.admin_list_users() where username = 'mariana'), 'quem nunca entrou aparece sem último acesso');
 
 -- 3. Operador -------------------------------------------------------------------
 select tests.login('joao');
@@ -186,6 +192,7 @@ select tests.fails($$select public.admin_create_user('intruso', 'senha-intruso',
 select tests.fails($$select public.admin_set_password(tests.uid('chefe'), 'senha-roubada')$$, 'operador trocar senha', 'sem_permissao');
 select tests.fails($$select public.admin_update_user(tests.uid('chefe'), 'chefe', 'X')$$, 'operador editar usuário', 'sem_permissao');
 select tests.fails($$select public.admin_delete_user(tests.uid('chefe'))$$, 'operador excluir usuário', 'sem_permissao');
+select tests.fails($$select * from public.admin_list_users()$$, 'operador ver último acesso dos outros', 'sem_permissao');
 select tests.fails($$select public.create_first_admin('x2', 'senha-forte-x', 'X')$$, 'operador usar create_first_admin', 'permission denied');
 select tests.fails($$select public._create_login('x3', 'senha-forte-x', 'X', 'admin')$$, 'operador usar função interna', 'permission denied');
 select tests.fails($$create table public.invasao (id int)$$, 'operador criar tabela', 'permission denied');
@@ -201,6 +208,7 @@ select tests.fails($$select * from public.profiles$$, 'visitante ler usuários',
 select tests.fails($$select * from public.audit_log$$, 'visitante ler registro', 'permission denied');
 select tests.fails($$insert into public.projects (name) values ('x')$$, 'visitante criar projeto', 'permission denied');
 select tests.fails($$select public.admin_create_user('x', 'senha-forte-x', 'X', 'admin')$$, 'visitante criar usuário', 'permission denied');
+select tests.fails($$select * from public.admin_list_users()$$, 'visitante ver usuários', 'permission denied');
 
 -- 5. Desativar, último administrador, excluir -----------------------------------
 reset role;
