@@ -416,3 +416,15 @@ html[data-theme=dark] .result-value small{color:#98a68e}
 html[data-theme=dark] .result-value strong{color:#c7f36b}
 html[data-theme=dark] .result.negative .result-value strong,html[data-theme=dark] .result.negative .result-value small{color:#ff969c}
 html[data-theme=dark] .result.negative .result-value.half{border-color:#a75155}
+@media(max-width:800px){
+  .result-values{flex-direction:column;gap:8px}
+  .result-value{flex-direction:row;justify-content:space-between;align-items:baseline;padding:0}
+  .result-value.half{border-left:0;border-top:1px solid #a9c97a;padding-top:8px}
+  .result.negative .result-value.half{border-top-color:#e6aeb1}
+  .result-value strong{font-size:clamp(18px,6vw,22px)}
+  .ficha-card{min-width:0}
+  .ficha-card strong{font-size:clamp(12px,4vw,16px);overflow-wrap:anywhere}
+  .previous-values strong{font-size:clamp(12px,3.6vw,14px)}
+}
+html[data-theme=dark] .result-value.half{border-top-color:#526a37}
+html[data-theme=dark] .result.negative .result-value.half{border-top-color:#a75155}
