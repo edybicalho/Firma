@@ -1,7 +1,7 @@
 // Conferência rigorosa das contas, com valores na casa dos milhões.
 // Cada resultado do app é comparado com uma conta de referência feita em centavos inteiros (exata).
 import { describe, expect, it } from 'vitest';
-import { dayResult, formatAmountInput, netById, operationDayResults, parseAmount } from '@/lib/calc';
+import { byDateAsc, dayResult, formatAmountInput, netById, operationDayResults, parseAmount, timeKey } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 // Gerador de números aleatórios com semente fixa: o teste é sempre o mesmo
@@ -100,5 +100,31 @@ describe('digitação de valores em milhões', () => {
       if (parseAmount(formatAmountInput(v)) !== v) errados.push(v);
     }
     expect(errados.slice(0, 5)).toEqual([]);
+  });
+});
+
+describe('ordem dos lançamentos (o movimento depende dela)', () => {
+  const base = { project_id: 'p', operation_id: 'o', recorded_at: '2026-11-12' };
+  it('horário sem fração vem antes do mesmo horário com fração', () => {
+    expect(timeKey('2026-11-12T12:00:00+00:00') < timeKey('2026-11-12T12:00:00.5+00:00')).toBe(true);
+    expect(timeKey('2026-11-12T12:00:00.000001+00:00') > timeKey('2026-11-12T12:00:00+00:00')).toBe(true);
+    expect(timeKey('2026-11-12T12:00:00.45+00:00') < timeKey('2026-11-12T12:00:00.5+00:00')).toBe(true);
+    expect(timeKey('2026-11-12T09:00:00-03:00')).toBe(timeKey('2026-11-12T12:00:00Z'));
+  });
+  it('empate exato: o resultado não depende da ordem em que o banco devolve', () => {
+    const a = { ...base, created_at: '2026-11-12T12:00:00+00:00', id: 'aaa', entry_total: 100, exit_total: 0 };
+    const b = { ...base, created_at: '2026-11-12T12:00:00+00:00', id: 'bbb', entry_total: 300, exit_total: 0 };
+    const n1 = netById([a, b]), n2 = netById([b, a]);
+    expect([n1.get('aaa'), n1.get('bbb')]).toEqual([n2.get('aaa'), n2.get('bbb')]);
+  });
+  it('mil embaralhadas diferentes dão sempre os mesmos movimentos', () => {
+    const r = rng(99); const movs: Movement[] = [];
+    for (let i = 0; i < 60; i++) movs.push({ ...base, operation_id: `o${i % 3}`, id: `m${i}`, created_at: `2026-11-12T12:00:0${i % 3}${i % 2 ? '' : '.5'}+00:00`, entry_total: Math.floor(r() * 1e9) / 100, exit_total: Math.floor(r() * 1e8) / 100 });
+    const referencia = netById(movs);
+    for (let k = 0; k < 1000; k++) {
+      const n = netById([...movs].sort(() => r() - 0.5));
+      for (const m of movs) if (n.get(m.id) !== referencia.get(m.id)) throw new Error(`mudou em ${m.id}`);
+    }
+    expect([...movs].sort(byDateAsc).map((m) => m.id)).toEqual([...movs].reverse().sort(byDateAsc).map((m) => m.id));
   });
 });

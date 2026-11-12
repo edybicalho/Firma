@@ -267,7 +267,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
     if (!asBase && previous && previous.recorded_at === today && newEntry === 0 && newExit === 0 && !confirm('Os valores são iguais aos do último lançamento de hoje. Salvar mesmo assim?')) return;
     setSaving(true);
     // Alguém lançou nesta ficha enquanto a tela estava aberta? Então atualiza e pede para conferir.
-    const latest = await supabase.from('movements').select('id').eq('operation_id', currentOperation.id).order('recorded_at', { ascending: false }).order('created_at', { ascending: false }).order('id').limit(1);
+    const latest = await supabase.from('movements').select('id').eq('operation_id', currentOperation.id).order('recorded_at', { ascending: false }).order('created_at', { ascending: false }).order('id', { ascending: false }).limit(1);
     if (!latest.error && (latest.data?.[0]?.id ?? null) !== (previous?.id ?? null)) {
       await load(true);
       setMessage('Alguém acabou de lançar nesta ficha. Os valores foram atualizados: confira e salve de novo.');
