@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDownRight, ArrowUpRight, CalendarDays, Download, FileText, History, LayoutDashboard, LogOut, Menu, Pencil, Plus, RefreshCw, Save, Search, Settings2, StickyNote, TrendingUp, X, BarChart3, Trash2, Users } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarDays, Download, FileText, History, LayoutDashboard, LogOut, Menu, Moon, Pencil, Plus, RefreshCw, Save, Search, Settings2, StickyNote, Sun, TrendingUp, X, BarChart3, Trash2, Users } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { emailToUsername } from '@/lib/types';
@@ -8,6 +8,8 @@ import { Login, PendingAccess } from '@/Login';
 import { UsersAdmin } from '@/UsersAdmin';
 import { AuditLog } from '@/AuditLog';
 import { fetchAllPages } from '@/lib/pages';
+import { applyTheme, currentTheme } from '@/lib/theme';
+import type { Theme } from '@/lib/theme';
 import { byDateDesc, dayResult, operationDayResults, formatAmountInput, lastDayByProject, money, movementsCsv, netById, parseAmount, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
@@ -50,6 +52,8 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
   const [notesProjectId, setNotesProjectId] = useState('');
   const notify = useCallback((text: string) => { setMessage(text); window.setTimeout(() => setMessage(''), 3000); }, []);
   const [notesText, setNotesText] = useState('');
+  const [theme, setTheme] = useState<Theme>(currentTheme);
+  const toggleTheme = () => { const next: Theme = theme === 'dark' ? 'light' : 'dark'; applyTheme(next); setTheme(next); };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -274,7 +278,7 @@ function Workspace({ profile, onSignOut }: { profile: Profile; onSignOut: () => 
 
   const usersView = <div className="settings-view"><div className="settings-header"><div><small>USUÁRIOS</small><h2>Gerenciar usuários e acessos</h2></div><Users size={22} className="settings-icon" /></div><UsersAdmin currentUserId={profile.id} notify={notify} /></div>;
 
-  return <div className="app"><header className="topbar"><div className="brand"><span className="brand-icon"><TrendingUp size={18} /></span>Acumula</div><nav className={mobileMenuOpen ? 'mobile-open' : ''}><button className={view === 'dashboard' ? 'active' : ''} onClick={() => { setView('dashboard'); setMobileMenuOpen(false); }}><LayoutDashboard size={16} /> Painel principal</button><button className={view === 'reports' ? 'active' : ''} onClick={() => { setView('reports'); setMobileMenuOpen(false); }}><FileText size={16} /> Relatórios</button>{isAdmin && <button className={view === 'settings' ? 'active' : ''} onClick={() => { setView('settings'); setMobileMenuOpen(false); }}><Settings2 size={16} /> Configurações</button>}{isAdmin && <button className={view === 'users' ? 'active' : ''} onClick={() => { setView('users'); setMobileMenuOpen(false); }}><Users size={16} /> Usuários</button>}{isAdmin && <button className={view === 'audit' ? 'active' : ''} onClick={() => { setView('audit'); setMobileMenuOpen(false); }}><History size={16} /> Registro</button>}</nav><div className="profile"><span className="user-chip"><b>{profile.name}</b><small>{isAdmin ? 'Administrador' : 'Operador'}</small></span><button className="ghost logout" onClick={onSignOut}><LogOut size={14} /> Sair</button><button className="mobile-toggle" aria-label="Abrir menu" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}><Menu size={19} /></button></div></header>
+  return <div className="app"><header className="topbar"><div className="brand"><span className="brand-icon"><TrendingUp size={18} /></span>Acumula</div><nav className={mobileMenuOpen ? 'mobile-open' : ''}><button className={view === 'dashboard' ? 'active' : ''} onClick={() => { setView('dashboard'); setMobileMenuOpen(false); }}><LayoutDashboard size={16} /> Painel principal</button><button className={view === 'reports' ? 'active' : ''} onClick={() => { setView('reports'); setMobileMenuOpen(false); }}><FileText size={16} /> Relatórios</button>{isAdmin && <button className={view === 'settings' ? 'active' : ''} onClick={() => { setView('settings'); setMobileMenuOpen(false); }}><Settings2 size={16} /> Configurações</button>}{isAdmin && <button className={view === 'users' ? 'active' : ''} onClick={() => { setView('users'); setMobileMenuOpen(false); }}><Users size={16} /> Usuários</button>}{isAdmin && <button className={view === 'audit' ? 'active' : ''} onClick={() => { setView('audit'); setMobileMenuOpen(false); }}><History size={16} /> Registro</button>}</nav><div className="profile"><span className="user-chip"><b>{profile.name}</b><small>{isAdmin ? 'Administrador' : 'Operador'}</small></span><button className="ghost theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'} title={theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}</button><button className="ghost logout" onClick={onSignOut}><LogOut size={14} /> Sair</button><button className="mobile-toggle" aria-label="Abrir menu" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}><Menu size={19} /></button></div></header>
   <div className="page-title"><div>{view !== 'dashboard' && <small>{view === 'reports' ? 'RELATÓRIOS' : view === 'users' ? 'USUÁRIOS' : view === 'audit' ? 'REGISTRO' : 'CONFIGURAÇÕES'}</small>}<h1>{view === 'reports' ? 'Relatórios' : view === 'settings' ? 'Configurações' : view === 'users' ? 'Usuários' : view === 'audit' ? 'Registro de alterações' : 'PONTOS'}</h1></div><div className="tools">{view !== 'users' && view !== 'audit' && <label><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar projeto..." /></label>}<button className="ghost" onClick={() => void load()}><RefreshCw size={14} /> Atualizar</button></div></div>
   {message && view !== 'dashboard' && <div className="notice" style={{ maxWidth: 1120, margin: '0 auto', padding: '10px 40px' }}>{message}</div>}
   {view === 'dashboard' && dashboardView}

@@ -17,7 +17,7 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 
 - React 18 + TypeScript + Vite + Tailwind; ícones `lucide-react`.
 - Supabase (`src/lib/supabase.ts`) com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no `.env` (fora do Git).
-- Arquivos: `src/App.tsx` (app principal, `Workspace`, controle de login), `src/Login.tsx` (tela de entrada e de acesso desativado), `src/UsersAdmin.tsx` (gestão de usuários), `src/AuditLog.tsx` (tela Registro), `src/lib/calc.ts` (leitura de valores e todas as contas), `src/lib/audit.ts` (frases do registro), `src/lib/pages.ts` (busca em páginas), `src/lib/types.ts` (perfis e regra do login), `src/index.css` (todo o visual, tema claro).
+- Arquivos: `src/App.tsx` (app principal, `Workspace`, controle de login), `src/Login.tsx` (tela de entrada e de acesso desativado), `src/UsersAdmin.tsx` (gestão de usuários), `src/AuditLog.tsx` (tela Registro), `src/lib/calc.ts` (leitura de valores e todas as contas), `src/lib/audit.ts` (frases do registro), `src/lib/pages.ts` (busca em páginas), `src/lib/types.ts` (perfis e regra do login), `src/index.css` (todo o visual: tema claro primeiro e, no fim, o bloco do tema escuro com seletores `html[data-theme=dark]`; ao mudar uma cor, ajuste os dois), `src/lib/theme.ts` e `public/tema.js` (botão sol/lua; a escolha fica guardada no navegador de cada pessoa; padrão: claro).
 - `public/_headers`: cabeçalhos de segurança do Cloudflare Pages (se trocar de hospedagem ou do Supabase, revisar o `connect-src`).
 - O Supabase devolve no máximo 1.000 linhas por consulta: toda lista que pode crescer usa `fetchAllPages` com ordem fixa terminando em `id`.
 - Importado do Bolt; o projeto **não volta para o Bolt**.
@@ -30,6 +30,7 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 - Senha mínima de **8** caracteres (tela e banco). Trocar a senha ou desativar alguém encerra as sessões abertas dessa pessoa.
 - Valores digitados no jeito brasileiro (`1.234,56`; `1.500` = mil e quinhentos). Valor inválido é recusado com aviso, nunca vira zero. O acumulado novo não pode ser menor que o anterior.
 - Excluir projeto pede para digitar o nome dele.
+- Dois temas, **claro** (padrão) e **escuro**, trocados pelo botão sol/lua no topo, ao lado de Sair.
 - As janelas (modais) só fecham pelo X, Cancelar ou ao salvar; clicar fora não fecha.
 - No celular, a consulta de lançamentos vira blocos empilhados (sem rolagem lateral) e o menu abre em lista vertical.
 - As regras de acesso também ficam no banco (RLS e funções), não só na interface.
