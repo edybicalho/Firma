@@ -364,3 +364,5 @@ html[data-theme=dark] .date-item.active{background:#c7f36b14;box-shadow:inset 0 
 html[data-theme=dark] .date-item em{color:#d9f99d;background:#c7f36b18}
 html[data-theme=dark] .date-item strong{color:#c7f36b}
 html[data-theme=dark] .date-item strong.neg{color:#ff969c}
+.date-item i{font:500 10px 'JetBrains Mono';font-style:normal;color:#6b7476}
+html[data-theme=dark] .date-item i{color:#899294}
