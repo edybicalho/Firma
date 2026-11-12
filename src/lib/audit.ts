@@ -66,6 +66,9 @@ export function describeAudit(entry: AuditEntry, lookups: AuditLookups): string 
       if (!changes.length) changes.push(`alterou o usuário ${str(after.username)}`);
       return capitalize(changes.join(', '));
     }
+    case 'sistema':
+      if (entry.action === 'LIMPEZA') return 'Apagou os dados de treino para começar o uso real';
+      return `${entry.action} no sistema`;
     default:
       return `${entry.action} em ${entry.table_name}`;
   }

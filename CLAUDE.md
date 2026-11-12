@@ -66,7 +66,7 @@ Na criação do projeto: Data API ligada, **"Automatically expose new tables" de
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
-**Testes:** `npm run test:telas` (16 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 88 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
+**Testes:** `npm run test:telas` (16 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 89 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
@@ -77,11 +77,11 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 
 ## Próximos passos combinados
 
-1. Terminar os testes no app publicado: trocar a senha temporária do administrador, colocar o endereço do app em Authentication → URL Configuration → Site URL, testar um operador de teste (e apagar depois) e confirmar que "Allow new users to sign up" está desligado.
-2. Mudar para o plano Pro antes de usar com dados reais.
-3. (Feito) Supabase novo, migrações e publicação no Cloudflare Pages.
-4. Pendências de funcionalidade: o administrador **corrigir lançamentos de dias anteriores** pela tela (o banco já permite e registra). O registro de alterações já existe.
-5. Antes de usar com dados reais: plano Pro (backup diário) e, de vez em quando, baixar a planilha de lançamentos.
+**Para começar o uso real: seguir `docs/COMECAR_USO_REAL.md`** (Pro + senhas vazadas, cadastro fechado, Site URL, migração 8 e conferência com 15 ✅, limpeza do treino com `supabase/limpeza_dados_de_treino.sql`, trocar a senha temporária, usuários, projetos e fichas).
+
+- `supabase/limpeza_dados_de_treino.sql` (fora das migrações, de propósito): apaga projetos, fichas, lançamentos e o Registro; mantém usuários. Só roda com a frase `APAGAR DADOS DE TREINO`; testado no `npm run test:db` (sem a frase não apaga nada; depois dela a conferência fica toda ✅ e o app volta a lançar normalmente).
+- Pendência de funcionalidade: o administrador **corrigir lançamentos de dias anteriores** pela tela (o banco já permite e registra).
+- Melhorias de segurança oferecidas e ainda não escolhidas pelo dono: código no celular (MFA) para administradores, sair sozinho quando parado, bloquear senhas fracas.
 
 ## Forma de trabalho
 
