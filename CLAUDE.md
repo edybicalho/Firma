@@ -54,18 +54,25 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 
 **Testes:** `npm run check` (tipos, verificador e 46 testes das contas). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
 
-**Situação:** as migrações ainda **não foram rodadas** em nenhum Supabase real. Foram testadas num PostgreSQL local com a imitação do Supabase; os campos de login gravados em `auth.users` foram conferidos com o código oficial do Supabase Auth. Falta o teste final no Supabase real (entrar com o usuário criado). O app hoje não está publicado em lugar nenhum.
+**Situação (novembro de 2026):**
+- Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
+- As 5 migrações rodaram com sucesso, o primeiro administrador foi criado e a conferência de segurança deu ✅ nas 12 linhas. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
+- App publicado no **Cloudflare Pages** a partir da `main`, com `VITE_SUPABASE_URL` (só o endereço base, sem `/rest/v1/`), `VITE_SUPABASE_ANON_KEY` (chave `sb_publishable_...`) e `NODE_VERSION=22`. O login funcionou de verdade.
+- Ainda **sem dados reais**: antes, mudar para o plano Pro e ligar "Prevent use of leaked passwords".
 
 ## Próximos passos combinados
 
-1. Confirmar se o dono tem acesso ao Supabase criado pelo Bolt ou criar um novo (região São Paulo; plano Pro recomendado por causa do backup diário).
-2. Rodar as migrações, criar o primeiro administrador e testar login, operador e regras de acesso de verdade.
-3. Publicar o app no **Cloudflare Pages** a partir do GitHub (o plano gratuito da Vercel não permite uso comercial). Configurar as variáveis `VITE_SUPABASE_*` lá.
+1. Terminar os testes no app publicado: trocar a senha temporária do administrador, colocar o endereço do app em Authentication → URL Configuration → Site URL, testar um operador de teste (e apagar depois) e confirmar que "Allow new users to sign up" está desligado.
+2. Mudar para o plano Pro antes de usar com dados reais.
+3. (Feito) Supabase novo, migrações e publicação no Cloudflare Pages.
 4. Pendências de funcionalidade: o administrador **corrigir lançamentos de dias anteriores** pela tela (o banco já permite e registra). O registro de alterações já existe.
 5. Antes de usar com dados reais: plano Pro (backup diário) e, de vez em quando, baixar a planilha de lançamentos.
 
 ## Forma de trabalho
 
 - O dono não é programador: explique em linguagem simples, sem jargão.
-- Mostre o resultado antes de enviar e só faça `git push` quando ele aprovar.
+- **Envio automático (autorizado pelo dono):** depois de testar (`npm run check`, e `npm run test:db` se mexer no banco), faça commit e `git push` sem pedir permissão, **sempre numa versão separada** (branch), nunca direto na `main`. Em seguida abra o pedido de junção (pull request) e passe ao dono o link dele e o endereço de teste do Cloudflare (`https://<nome-da-branch>.acumula.pages.dev`, ou o nome do projeto que aparecer no Cloudflare).
+- **Juntar na `main` (o app oficial) é decisão do dono:** ele clica em Merge no GitHub. O Cloudflare publica sozinho em uns 2 minutos.
+- **Mudanças no banco não são automáticas:** quando houver arquivo novo em `supabase/migrations/`, avise o dono e passe o link "raw" para ele rodar no SQL Editor, conferindo com `supabase/conferencia_seguranca.sql`.
+- O endereço de teste usa o **mesmo banco** do app oficial: avise para testar com dados de teste e apagar depois.
 - Commits pequenos, com mensagem em português.
