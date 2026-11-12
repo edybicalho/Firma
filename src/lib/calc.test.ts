@@ -105,8 +105,8 @@ describe('planilha de lançamentos (cópia de segurança)', () => {
   const csv = movementsCsv(movements, () => 'Obra "Norte"', () => '01 — Fundação');
   it('abre no Excel em português (acentos, ponto e vírgula, vírgula decimal)', () => {
     expect(csv.startsWith('﻿Projeto;Operação;Data')).toBe(true);
-    expect(csv).toContain('"Obra ""Norte""";"01 — Fundação";10/11/2026;1000,50;400,00;600,50');
-    expect(csv).toContain(';11/11/2026;1500,00;500,00;399,50');
+    expect(csv).toContain('"Obra ""Norte""";"01 — Fundação";10/11/2026;1000,50;400,00;600,50;Não');
+    expect(csv).toContain(';11/11/2026;1500,00;500,00;399,50;Não');
   });
   it('nomes que começam com = não viram fórmula no Excel', () => {
     const evil = movementsCsv(movements, () => '=HYPERLINK("http://x")', () => '+1');
@@ -153,5 +153,30 @@ describe('lançamentos no mesmo dia', () => {
   });
   it('o resultado do dia da ficha soma os dois', () => {
     expect(operationDayResults(all, net, 'p1', '2026-11-10').get('op1')).toBe(350);
+  });
+});
+
+describe('nova base', () => {
+  const base = (m: Movement): Movement => ({ ...m, is_base: true });
+  const all = [
+    mv('a1', 'op1', 5000, 2000, '2026-11-10'),
+    base(mv('b1', 'op1', 100, 50, '2026-11-11', '08:00')),
+    mv('a2', 'op1', 400, 150, '2026-11-11', '17:00'),
+    mv('a3', 'op1', 900, 300, '2026-11-12'),
+  ];
+  const net = netById(all);
+  it('o lançamento de nova base não soma (movimento zero), mesmo com valor menor que o anterior', () => {
+    expect(net.get('b1')).toBe(0);
+  });
+  it('os próximos lançamentos comparam com a nova base', () => {
+    expect(net.get('a2')).toBe((400 - 100) - (150 - 50));
+    expect(net.get('a3')).toBe((900 - 400) - (300 - 150));
+  });
+  it('o resultado do dia ignora a nova base e soma só os outros', () => {
+    expect(dayResult(all, net, 'p1', '2026-11-11')).toBe(200);
+  });
+  it('a planilha indica qual lançamento é nova base', () => {
+    const csv = movementsCsv(all, () => 'P', () => 'O');
+    expect(csv).toContain(';11/11/2026;100,00;50,00;0,00;Sim');
   });
 });

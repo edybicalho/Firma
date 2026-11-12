@@ -366,3 +366,27 @@ html[data-theme=dark] .date-item strong{color:#c7f36b}
 html[data-theme=dark] .date-item strong.neg{color:#ff969c}
 .date-item i{font:500 10px 'JetBrains Mono';font-style:normal;color:#6b7476}
 html[data-theme=dark] .date-item i{color:#899294}
+
+/* Nova base */
+.base-toggle{display:flex;align-items:flex-start;gap:10px;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dcdc;border-radius:7px;background:#fafbfb;cursor:pointer;transition:border-color .15s,background .15s}
+.base-toggle.on{border-color:#d9a425;background:#fdf6e3}
+.base-toggle input{position:absolute;opacity:0;pointer-events:none}
+.base-toggle .switch{position:relative;flex-shrink:0;width:34px;height:20px;margin-top:1px;border-radius:20px;background:#c9d0d0;transition:background .15s}
+.base-toggle .switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:transform .15s}
+.base-toggle.on .switch{background:#c58a00}
+.base-toggle.on .switch::after{transform:translateX(14px)}
+.base-toggle input:focus-visible+.switch{outline:2px solid #8fbf45;outline-offset:2px}
+.base-text{display:flex;flex-direction:column;gap:2px}
+.base-text b{font-size:12px;color:#1c211c}
+.base-text small{color:#6b7476;font-size:10px;line-height:1.4;letter-spacing:0;text-transform:none;font-weight:400}
+.base-toggle.on .base-text small{color:#7a5600}
+.base-tag{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;background:#c58a0020;color:#8a5f00;font:600 9px 'DM Sans';font-style:normal;text-transform:uppercase;letter-spacing:.05em;vertical-align:middle}
+.previous-date .base-tag{margin:0 6px 0 0}
+html[data-theme=dark] .base-toggle{border-color:#3a4243;background:#1a1e20}
+html[data-theme=dark] .base-toggle.on{border-color:#a07c2a;background:#f5d27a14}
+html[data-theme=dark] .base-toggle .switch{background:#454d4e}
+html[data-theme=dark] .base-toggle.on .switch{background:#e0b445}
+html[data-theme=dark] .base-text b{color:#f2f4f2}
+html[data-theme=dark] .base-text small{color:#899294}
+html[data-theme=dark] .base-toggle.on .base-text small{color:#f5d27a}
+html[data-theme=dark] .base-tag{background:#f5d27a1f;color:#f5d27a}

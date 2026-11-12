@@ -8,6 +8,8 @@ export type Movement = {
   exit_total: number;
   recorded_at: string;
   created_at: string;
+  /** Nova base: não soma no resultado; os próximos lançamentos comparam com este. */
+  is_base?: boolean | null;
 };
 
 export const MAX_AMOUNT = 999_999_999_999.99;
@@ -51,8 +53,9 @@ const byDateAsc = (a: Movement, b: Movement) =>
   `${a.recorded_at}${a.created_at}`.localeCompare(`${b.recorded_at}${b.created_at}`);
 export const byDateDesc = (a: Movement, b: Movement) => byDateAsc(b, a);
 
-/** Movimento real de um lançamento: (entrada - entrada anterior) - (saída - saída anterior). */
-export const netMovement = (current: Movement, previous?: Movement) =>
+/** Movimento real de um lançamento: (entrada - entrada anterior) - (saída - saída anterior).
+ *  Uma "nova base" tem movimento zero: ela só marca o novo ponto de partida. */
+export const netMovement = (current: Movement, previous?: Movement) => current.is_base ? 0 :
   (Number(current.entry_total) - (previous ? Number(previous.entry_total) : 0)) -
   (Number(current.exit_total) - (previous ? Number(previous.exit_total) : 0));
 
@@ -113,7 +116,8 @@ export function movementsCsv(
     num(m.entry_total),
     num(m.exit_total),
     num(net.get(m.id) ?? 0),
+    m.is_base ? 'Sim' : 'Não',
   ].join(';'));
-  const header = ['Projeto', 'Operação', 'Data', 'Entrada acumulada', 'Saída acumulada', 'Movimento líquido'].join(';');
+  const header = ['Projeto', 'Operação', 'Data', 'Entrada acumulada', 'Saída acumulada', 'Movimento líquido', 'Nova base'].join(';');
   return `\uFEFF${[header, ...rows].join('\r\n')}\r\n`;
 }

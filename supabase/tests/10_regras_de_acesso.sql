@@ -141,6 +141,15 @@ insert into public.movements (project_id, operation_id, entry_total, exit_total)
 select (select id from public.projects where name = 'Obra Sul'), id, 1500, 500 from public.operations where name = 'Fundação';
 select tests.check((select p.name = 'Obra Norte' from public.movements m join public.projects p on p.id = m.project_id where m.entry_total = 1500), 'lançamento fica no projeto certo');
 select tests.check((select created_by = auth.uid() from public.movements where entry_total = 1500), 'fica gravado quem lançou');
+select tests.check((select not is_base from public.movements where entry_total = 1500), 'lançamento comum não é nova base');
+insert into public.movements (project_id, operation_id, entry_total, exit_total, is_base)
+select project_id, id, 10, 5, true from public.operations where name = 'Fundação';
+select tests.check((select is_base from public.movements where entry_total = 10), 'operador salva nova base, mesmo com valor menor');
+reset role;
+select tests.check(tests.total($$select * from public.audit_log where table_name = 'movements' and new_data ->> 'is_base' = 'true'$$) = 1, 'registro guarda que foi nova base');
+set role authenticated;
+select tests.login('joao');
+select tests.check(tests.affected($$delete from public.movements where entry_total = 10$$) = 1, 'operador exclui a nova base de hoje');
 select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total, recorded_at) select project_id, id, 2000, 600, current_date - 2 from public.operations where name = 'Fundação'$$, 'operador lançar em dia anterior', 'row-level security');
 select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total, recorded_at) select project_id, id, 2000, 600, current_date + 5 from public.operations where name = 'Fundação'$$, 'operador lançar em dia futuro', 'row-level security');
 select tests.check(tests.affected($$update public.movements set entry_total = 9999$$) = 0, 'operador não altera lançamentos');
