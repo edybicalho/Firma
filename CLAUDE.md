@@ -71,8 +71,9 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 ## Forma de trabalho
 
 - O dono não é programador: explique em linguagem simples, sem jargão.
-- **Envio automático (autorizado pelo dono):** depois de testar (`npm run check`, e `npm run test:db` se mexer no banco), faça commit e `git push` sem pedir permissão, **sempre numa versão separada** (branch), nunca direto na `main`. Em seguida abra o pedido de junção (pull request) e passe ao dono o link dele e o endereço de teste do Cloudflare (`https://<nome-da-branch>.acumula.pages.dev`, ou o nome do projeto que aparecer no Cloudflare).
-- **Juntar na `main` (o app oficial) é decisão do dono:** ele clica em Merge no GitHub. O Cloudflare publica sozinho em uns 2 minutos.
+- **Envio automático (autorizado pelo dono):** depois de testar (`npm run check`, e `npm run test:db` se mexer no banco), faça commit e `git push` sem pedir permissão, **sempre na versão fixa `teste`**, nunca direto na `main` e sem criar outras versões (o dono não quer várias versões de teste).
+- **Uma versão de teste só:** a branch `teste` tem endereço fixo no Cloudflare (`https://teste.<projeto>.pages.dev`). Existe **um único pedido de junção** `teste` → `main`; se não houver um aberto, abra. Passe ao dono o link do pedido e lembre do endereço de teste.
+- **Juntar na `main` (o app oficial) é decisão do dono:** ele clica em Merge no GitHub. O Cloudflare publica sozinho em uns 2 minutos. Depois de juntar, a `teste` continua existindo: antes da próxima mudança, atualize a `teste` com a `main` (`git merge origin/main`) e siga trabalhando nela.
 - **Mudanças no banco não são automáticas:** quando houver arquivo novo em `supabase/migrations/`, avise o dono e passe o link "raw" para ele rodar no SQL Editor, conferindo com `supabase/conferencia_seguranca.sql`.
 - O endereço de teste usa o **mesmo banco** do app oficial: avise para testar com dados de teste e apagar depois.
 - Commits pequenos, com mensagem em português.
