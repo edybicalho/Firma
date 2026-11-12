@@ -321,7 +321,7 @@ html[data-theme=dark] .ficha-card.no-result strong{color:#7f8a89}
 .back-button{display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;padding:6px 10px 6px 6px;border:0;border-radius:6px;background:none;color:#4f7a0e;font-size:12px;font-weight:600}
 .back-button:hover{background:#4f7a0e14}
 .project-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.edit-inline{height:28px;font-size:11px;letter-spacing:0}
+
 @media(max-width:800px){.project-select{padding:25px 17px 40px}.project-grid{grid-template-columns:1fr}}
 html[data-theme=dark] .project-tile{border-color:#3a4243;background:#1d2224cc;color:#f2f4f2}
 html[data-theme=dark] .project-tile:hover{border-color:#789d35;box-shadow:0 6px 18px #0006}
