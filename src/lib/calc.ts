@@ -55,8 +55,20 @@ export function parseAmount(raw: string): number | null {
 const inputFormat = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const formatAmountInput = (value: number) => inputFormat.format(Number(value));
 
-const byDateAsc = (a: Movement, b: Movement) =>
-  `${a.recorded_at}${a.created_at}`.localeCompare(`${b.recorded_at}${b.created_at}`);
+// Chave de horário que ordena certo até o microssegundo (o banco manda, por exemplo,
+// "2026-11-12T12:00:00.123456+00:00" ou, quando o microssegundo é zero, "2026-11-12T12:00:00+00:00").
+// Nunca usar localeCompare aqui: ele põe "12:00:00.5" antes de "12:00:00".
+export function timeKey(iso: string | null | undefined): string {
+  const text = String(iso ?? '');
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?(Z|[+-]00(?::?00)?)?$/.exec(text);
+  if (m) return `${m[1]}T${m[2]}.${(m[3] ?? '').padEnd(6, '0')}`;
+  const ms = Date.parse(text); // outro fuso: converte para UTC (precisão de milissegundos)
+  return Number.isNaN(ms) ? '' : `${new Date(ms).toISOString().slice(0, 19)}.${String(ms % 1000).padStart(3, '0')}000`;
+}
+const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+/** Ordem dos lançamentos: dia do lançamento, depois horário exato e, em empate, o id (o mesmo critério do banco). */
+export const byDateAsc = (a: Movement, b: Movement) =>
+  cmp(a.recorded_at, b.recorded_at) || cmp(timeKey(a.created_at), timeKey(b.created_at)) || cmp(a.id, b.id);
 export const byDateDesc = (a: Movement, b: Movement) => byDateAsc(b, a);
 
 /** Movimento real de um lançamento: (entrada - entrada anterior) - (saída - saída anterior).
@@ -147,7 +159,7 @@ export function reportDays(movements: Movement[], net: Map<string, number>, proj
     days.set(m.recorded_at, entry);
   }
   return [...days.entries()]
-    .sort((a, b) => b[0].localeCompare(a[0]))
+    .sort((a, b) => cmp(b[0], a[0]))
     .map(([day, { cents, launches }]) => ({ day, result: fromCents(cents), launches: launches.sort(byDateDesc) }));
 }
 

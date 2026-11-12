@@ -91,7 +91,8 @@ select tests.fails($$insert into public.projects (name) values ('   ')$$, 'proje
 insert into public.movements (project_id, operation_id, entry_total, exit_total, recorded_at)
 select o.project_id, o.id, 1000, 400, (now() at time zone 'America/Sao_Paulo')::date - 1
 from public.operations o where o.name = 'Fundação';
-select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total) select project_id, id, -1, 0 from public.operations where name = 'Fundação'$$, 'valor negativo', 'movements_values_valid');
+select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total) select project_id, id, -1, 0 from public.operations where name = 'Fundação'$$, 'valor negativo');
+select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total, is_base) select project_id, id, -1, 0, true from public.operations where name = 'Fundação'$$, 'valor negativo nem em novo jogo', 'movements_values_valid');
 select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total) select project_id, id, 1e13, 0 from public.operations where name = 'Fundação'$$, 'valor absurdo');
 select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total) select project_id, gen_random_uuid(), 1, 0 from public.operations where name = 'Fundação'$$, 'operação inexistente', 'operacao_inexistente');
 
@@ -150,6 +151,20 @@ select tests.check(tests.total($$select * from public.audit_log where table_name
 set role authenticated;
 select tests.login('joao');
 select tests.check(tests.affected($$delete from public.movements where entry_total = 10$$) = 1, 'operador exclui a nova base de hoje');
+-- O banco não deixa o acumulado diminuir (a não ser em "Novo jogo" ou correção de data antiga)
+select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total) select project_id, id, 1400, 600 from public.operations where name = 'Fundação'$$, 'entrada menor que o último lançamento', 'acumulado_menor');
+select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total) select project_id, id, 1600, 400 from public.operations where name = 'Fundação'$$, 'saída menor que o último lançamento', 'acumulado_menor');
+insert into public.movements (project_id, operation_id, entry_total, exit_total) select project_id, id, 1500, 500 from public.operations where name = 'Fundação';
+select tests.check(tests.affected($$delete from public.movements where entry_total = 1500 and exit_total = 500 and id = (select id from public.movements where entry_total = 1500 order by created_at desc limit 1)$$) = 1, 'valor igual ao último é aceito');
+insert into public.movements (project_id, operation_id, entry_total, exit_total, is_base) select project_id, id, 7, 3, true from public.operations where name = 'Fundação';
+select tests.check(tests.affected($$delete from public.movements where entry_total = 7$$) = 1, 'novo jogo com valor menor é aceito');
+reset role;
+select tests.login('chefe');
+set role authenticated;
+insert into public.movements (project_id, operation_id, entry_total, exit_total, recorded_at)
+select project_id, id, 1, 1, (now() at time zone 'America/Sao_Paulo')::date - 5 from public.operations where name = 'Fundação';
+select tests.check(tests.affected($$delete from public.movements where entry_total = 1 and exit_total = 1$$) = 1, 'administrador corrige lançamento de data antiga sem bloqueio');
+select tests.login('joao');
 select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total, recorded_at) select project_id, id, 2000, 600, current_date - 2 from public.operations where name = 'Fundação'$$, 'operador lançar em dia anterior', 'row-level security');
 select tests.fails($$insert into public.movements (project_id, operation_id, entry_total, exit_total, recorded_at) select project_id, id, 2000, 600, current_date + 5 from public.operations where name = 'Fundação'$$, 'operador lançar em dia futuro', 'row-level security');
 select tests.check(tests.affected($$update public.movements set entry_total = 9999$$) = 0, 'operador não altera lançamentos');
