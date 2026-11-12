@@ -556,3 +556,9 @@ html[data-theme=dark] .tile-values .tile-half{border-color:#333c3d}
 html[data-theme=dark] .tile-values .tile-half{border-top-color:#333c3d}
 .first-tag{margin-left:8px;padding:1px 6px;border-radius:4px;background:#c58a0020;color:#8a5f00;font:600 9px 'DM Sans';font-style:normal;text-transform:uppercase;letter-spacing:.05em;vertical-align:middle}
 html[data-theme=dark] .first-tag{background:#f5d27a1f;color:#f5d27a}
+
+/* Usuários: último acesso */
+.user-info .last-access{display:block;margin-top:2px;color:#4f7a0e;font-size:11px}
+.user-info .last-access.never{color:#8a5f00}
+html[data-theme=dark] .user-info .last-access{color:#b3dd73}
+html[data-theme=dark] .user-info .last-access.never{color:#f5d27a}

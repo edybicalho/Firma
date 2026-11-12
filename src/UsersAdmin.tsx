@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, UserCheck, UserX, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { PASSWORD_MIN, USERNAME_PATTERN } from '@/lib/types';
+import { PASSWORD_MIN, USERNAME_PATTERN, lastAccessLabel } from '@/lib/types';
 import type { Profile, Role } from '@/lib/types';
 
 const rpcError = (message: string, fallback: string) => {
@@ -35,7 +35,9 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at');
+    // Com o último acesso (função do banco, só administradores); se a função ainda não existir, lista sem ele
+    let { data, error } = await supabase.rpc('admin_list_users');
+    if (error && /admin_list_users|function|schema cache/i.test(error.message)) ({ data, error } = await supabase.from('profiles').select('*').order('created_at'));
     if (error) notify('Não foi possível carregar os usuários.');
     else setUsers((data ?? []) as Profile[]);
     setLoading(false);
@@ -128,7 +130,7 @@ export function UsersAdmin({ currentUserId, notify }: { currentUserId: string; n
               <div className="settings-op-row user-row" key={user.id}>
                 <div className="user-info">
                   <b>{user.name}{self && ' (você)'}</b>
-                  <small>Usuário: {user.username}</small>
+                  <small>Usuário: {user.username}</small>{'last_sign_in_at' in user && <small className={`last-access ${!user.last_sign_in_at ? 'never' : ''}`}>Último acesso: {lastAccessLabel(user.last_sign_in_at)}</small>}
                 </div>
                 <div className="user-badges">
                   <i className={`pill ${user.active ? 'ok' : 'wait'}`}>{user.active ? 'Com acesso' : 'Desativado'}</i>
