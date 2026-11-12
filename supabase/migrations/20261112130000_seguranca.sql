@@ -266,6 +266,15 @@ revoke all on function public.create_first_admin(text, text, text) from public, 
 --    usar comandos que passam por cima das regras (como esvaziar uma tabela inteira)
 revoke all on public.projects, public.operations, public.movements, public.profiles from anon;
 revoke truncate, references, trigger on public.projects, public.operations, public.movements from authenticated;
+
+-- 8. Liberação explícita, tabela por tabela, do que o app precisa. Assim tudo funciona mesmo com
+--    a opção "Automatically expose new tables" desligada no Supabase (recomendado), e nenhuma
+--    tabela nova fica exposta por descuido. Quem decide linha a linha continuam sendo as regras (RLS).
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.projects, public.operations, public.movements to authenticated;
+grant select on public.profiles to authenticated;
+grant select on public.audit_log to authenticated;
+grant all on public.projects, public.operations, public.movements, public.profiles, public.audit_log to service_role;
 do $$
 begin
   revoke create on schema public from anon, authenticated;
