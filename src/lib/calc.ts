@@ -79,6 +79,16 @@ export function dayResult(movements: Movement[], net: Map<string, number>, proje
   return Math.round(total * 100) / 100;
 }
 
+/** Resultado do dia de cada operação (ficha) de um projeto. Fichas sem lançamento no dia ficam de fora. */
+export function operationDayResults(movements: Movement[], net: Map<string, number>, projectId: string, day: string) {
+  const result = new Map<string, number>();
+  for (const m of movements) {
+    if (m.project_id !== projectId || m.recorded_at !== day) continue;
+    result.set(m.operation_id, Math.round(((result.get(m.operation_id) ?? 0) + (net.get(m.id) ?? 0)) * 100) / 100);
+  }
+  return result;
+}
+
 /** Último dia com lançamento em cada projeto. */
 export function lastDayByProject(movements: Movement[]) {
   const acc: Record<string, string> = {};

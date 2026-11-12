@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, parseAmount, todayIso } from '@/lib/calc';
+import { dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 describe('parseAmount: leitura dos valores digitados', () => {
@@ -111,5 +111,31 @@ describe('planilha de lançamentos (cópia de segurança)', () => {
   it('nomes que começam com = não viram fórmula no Excel', () => {
     const evil = movementsCsv(movements, () => '=HYPERLINK("http://x")', () => '+1');
     expect(evil).toContain(`"'=HYPERLINK(""http://x"")";"'+1"`);
+  });
+});
+
+describe('resultado do dia por ficha', () => {
+  const movements = [
+    mv('a1', 'op1', 1000, 400, '2026-11-11'),
+    mv('a2', 'op1', 1500, 500, '2026-11-12'),
+    mv('b1', 'op2', 200, 50, '2026-11-12', '09:00'),
+    mv('b2', 'op2', 260, 300, '2026-11-12', '15:00'),
+    mv('c1', 'op3', 100, 0, '2026-11-11'),
+    mv('d1', 'op9', 999, 0, '2026-11-12', '10:00', 'p2'),
+  ];
+  const net = netById(movements);
+  const results = operationDayResults(movements, net, 'p1', '2026-11-12');
+  it('cada ficha tem o próprio resultado do dia', () => {
+    expect(results.get('op1')).toBe(400);
+    expect(results.get('op2')).toBe(150 + (60 - 250));
+  });
+  it('ficha sem lançamento no dia fica sem resultado', () => {
+    expect(results.has('op3')).toBe(false);
+  });
+  it('não mistura fichas de outro projeto', () => {
+    expect(results.has('op9')).toBe(false);
+  });
+  it('a soma das fichas é o resultado do dia do projeto', () => {
+    expect([...results.values()].reduce((a, b) => a + b, 0)).toBe(dayResult(movements, net, 'p1', '2026-11-12'));
   });
 });
