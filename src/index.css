@@ -107,3 +107,23 @@
 .audit-text{margin:0;color:#c3c9c8;font-size:12px;line-height:1.45}
 .audit-more{height:36px;margin:14px auto 0}
 @media(max-width:800px){.audit-row{flex-direction:column;gap:6px}.audit-tools{width:100%}.audit-tools select{flex:1}}
+
+/* Fichas em quadros, com o resultado do dia de cada uma */
+.ficha-area{margin:28px 0 16px}
+.ficha-area-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;color:#899393;font-size:11px}
+.ficha-area-head small{color:#6f7978;font-size:10px}
+.ficha-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.ficha-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:12px 13px;border:1px solid #3a4243;border-radius:7px;background:#1d2224cc;color:#d6d9d8;transition:border-color .15s,background .15s}
+.ficha-card:hover{border-color:#5d6966}
+.ficha-card.selected{border-color:#c7f36b;background:#c7f36b12;box-shadow:0 0 0 1px #c7f36b55}
+.ficha-top{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:6px}
+.ficha-top b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ficha-num{color:#7e8988;font:600 11px 'JetBrains Mono';background:#1a1e20;border:1px solid #3a4243;border-radius:4px;padding:2px 6px;flex-shrink:0}
+.ficha-card.selected .ficha-num{color:#d9f99d;border-color:#789d35}
+.ficha-card small{color:#899294;font-size:10px}
+.ficha-card strong{color:#c7f36b;font:600 16px 'JetBrains Mono';letter-spacing:-.04em}
+.ficha-card.negative strong,.ficha-card.negative em{color:#ff969c}
+.ficha-card.no-result strong{color:#7f8a89;font:500 12px 'DM Sans';letter-spacing:0}
+.ficha-card em{font-style:normal;color:#98a68e;font:500 11px 'JetBrains Mono'}
+@media(max-width:800px){.ficha-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.previous-values strong{white-space:nowrap}
