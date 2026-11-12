@@ -21,12 +21,18 @@ novo_banco teste_novo
 rodar_migracoes teste_novo
 rodar_migracoes teste_novo
 "${PSQL[@]}" -d teste_novo -At -f supabase/tests/10_regras_de_acesso.sql
+echo "   Conferência de segurança (supabase/conferencia_seguranca.sql):"
+conferencia=$("${PSQL[@]}" -d teste_novo -At -F ' | ' -f supabase/conferencia_seguranca.sql)
+echo "$conferencia" | sed 's/^/   /'
+if echo "$conferencia" | grep -q '❌'; then echo "FALHOU: a conferência de segurança encontrou problemas"; exit 1; fi
 
 echo "2) Supabase antigo (criado pelo Bolt), com dados"
 novo_banco teste_bolt
 "${PSQL[@]}" -d teste_bolt -f supabase/tests/01_banco_antigo_bolt.sql >/dev/null
 rodar_migracoes teste_bolt
 "${PSQL[@]}" -d teste_bolt -At -f supabase/tests/20_banco_antigo_conferencia.sql
+echo "   Conferência no banco antigo (deve apontar o número repetido e a falta de administrador):"
+"${PSQL[@]}" -d teste_bolt -At -F ' | ' -f supabase/conferencia_seguranca.sql | grep '❌' | sed 's/^/   /'
 
 "${PSQL[@]}" -d postgres -c "drop database teste_novo" -c "drop database teste_bolt" >/dev/null
 echo "Tudo certo."

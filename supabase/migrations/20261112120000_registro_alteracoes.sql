@@ -28,7 +28,7 @@ revoke insert, update, delete, truncate, references, trigger on public.audit_log
 
 -- O registro não pode ser alterado nem apagado (nem pelo SQL Editor, sem antes desligar esta proteção)
 create or replace function public.audit_log_immutable() returns trigger
-language plpgsql as $$
+language plpgsql set search_path = public as $$
 begin
   raise exception 'registro_imutavel: o registro de alterações não pode ser alterado nem apagado';
 end;

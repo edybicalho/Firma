@@ -46,6 +46,8 @@ Migrações em `supabase/migrations/`, a rodar **nesta ordem** no SQL Editor (to
 
 Depois: `select public.create_first_admin('admin', 'senha', 'Nome');` e desligar os cadastros públicos em Authentication.
 
+**Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as linhas; o `npm run test:db` também roda essa conferência.
+
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
 **Testes:** `npm run check` (tipos, verificador e 46 testes das contas). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
