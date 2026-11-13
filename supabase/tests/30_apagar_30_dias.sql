@@ -47,6 +47,25 @@ select tests.login('chefe');
 select tests.fails($$select public.purge_old_data(30)$$, 'administrador pelo app não dispara a limpeza', 'permission denied');
 select set_config('acumula.purging', 'on', false);
 select tests.fails($$delete from public.audit_log$$, 'nem fingindo estar na limpeza dá para apagar o Registro', 'permission denied');
+reset role;
+-- Conexão do app (entra como "authenticator", não como dono do banco): ligar o modo de limpeza não pula o Registro
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'authenticator') then create role authenticator noinherit login; end if;
+end $$;
+grant authenticated to authenticator;
+grant usage on schema tests to authenticator;
+select id as chefe_id from public.profiles where username = 'chefe' \gset
+\c - authenticator
+set role authenticated;
+select set_config('request.jwt.claim.sub', :'chefe_id', false);
+select tests.check(tests.affected($$update public.projects set notes = 'teste do registro' where name = 'Obra Purga'$$) = 0 or true, 'preparo');
+select set_config('acumula.purging', 'on', false);
+select tests.check(tests.affected($$update public.projects set notes = 'teste do registro 2' where name = 'Obra Purga'$$) = 1, 'conexão do app altera o projeto (administrador)');
+select set_config('acumula.purging', '', false);
+\c - postgres
+select tests.check(tests.total($$select * from public.audit_log where table_name = 'projects' and new_data ->> 'notes' = 'teste do registro 2'$$) = 1, 'conexão do app não consegue pular o Registro, nem ligando o modo de limpeza');
+set role authenticated;
+select tests.login('chefe');
 select tests.check(tests.total('select * from public.operation_baselines') >= 2, 'administrador lê os pontos de comparação');
 select tests.fails($$update public.operation_baselines set entry_total = 0$$, 'ninguém altera o ponto de comparação pelo app', 'permission denied');
 select set_config('acumula.purging', '', false);

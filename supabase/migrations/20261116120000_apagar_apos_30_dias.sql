@@ -15,6 +15,9 @@ create table if not exists public.operation_baselines (
   recorded_at date not null,
   updated_at timestamptz not null default now()
 );
+-- Hora e identificação do lançamento de origem, para comparar na mesma ordem do app (dia, hora, id)
+alter table public.operation_baselines add column if not exists source_created_at timestamptz;
+alter table public.operation_baselines add column if not exists source_id uuid;
 alter table public.operation_baselines enable row level security;
 drop policy if exists operation_baselines_read on public.operation_baselines;
 create policy operation_baselines_read on public.operation_baselines
@@ -25,11 +28,13 @@ grant select on public.operation_baselines to authenticated;
 grant all on public.operation_baselines to service_role;
 
 -- 2. Durante a limpeza automática, o Registro não guarda cópia do que sai
---    e as linhas antigas do Registro podem ser apagadas. Só vale dentro da função de limpeza.
+--    e as linhas antigas do Registro podem ser apagadas. Só vale dentro da função de limpeza,
+--    numa conexão do próprio banco (agendador ou SQL Editor). Conexões do app entram como
+--    "authenticator", então nunca ativam isso, nem tentando.
 create or replace function public.purging() returns boolean
 language sql stable set search_path = public as $$
   select coalesce(current_setting('acumula.purging', true), '') = 'on'
-     and current_user in ('postgres', 'supabase_admin')
+     and session_user in ('postgres', 'supabase_admin')
 $$;
 revoke all on function public.purging() from public, anon, authenticated;
 
@@ -105,20 +110,24 @@ begin
   perform set_config('acumula.purging', 'on', true);
 
   -- Guarda o último lançamento que vai sair de cada ficha (só se for mais novo que o já guardado)
-  insert into public.operation_baselines (operation_id, entry_total, exit_total, recorded_at, updated_at)
-  select distinct on (operation_id) operation_id, entry_total, exit_total, recorded_at, now()
+  insert into public.operation_baselines (operation_id, entry_total, exit_total, recorded_at, source_created_at, source_id, updated_at)
+  select distinct on (operation_id) operation_id, entry_total, exit_total, recorded_at, created_at, id, now()
     from public.movements
    where recorded_at <= v_cutoff
    order by operation_id, recorded_at desc, created_at desc, id desc
   on conflict (operation_id) do update
-     set entry_total = excluded.entry_total, exit_total = excluded.exit_total,
-         recorded_at = excluded.recorded_at, updated_at = now()
-   where excluded.recorded_at >= public.operation_baselines.recorded_at;
+     set entry_total = excluded.entry_total, exit_total = excluded.exit_total, recorded_at = excluded.recorded_at,
+         source_created_at = excluded.source_created_at, source_id = excluded.source_id, updated_at = now()
+   where (excluded.recorded_at, excluded.source_created_at, excluded.source_id)
+         >= (public.operation_baselines.recorded_at,
+             coalesce(public.operation_baselines.source_created_at, '-infinity'::timestamptz),
+             coalesce(public.operation_baselines.source_id, '00000000-0000-0000-0000-000000000000'::uuid));
 
   delete from public.movements where recorded_at <= v_cutoff;
   get diagnostics v_count = row_count;
 
-  delete from public.audit_log where happened_at < now() - make_interval(days => p_days);
+  -- Registro: mesmo critério dos lançamentos (dia de Brasília)
+  delete from public.audit_log where (happened_at at time zone 'America/Sao_Paulo')::date <= v_cutoff;
 
   perform set_config('acumula.purging', 'off', true);
 

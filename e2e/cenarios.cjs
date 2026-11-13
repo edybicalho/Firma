@@ -16,6 +16,7 @@ async function abrir(browser, banco, opcoes = {}) {
     if (url.pathname.includes('/auth/v1/token')) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid login credentials', msg: 'Invalid login credentials' }) });
     const tabela = url.pathname.split('/rest/v1/')[1];
     if (banco.semInternet || (banco.semInternetEm && banco.semInternetEm === tabela)) return route.abort('internetdisconnected');
+    if (banco.semTabela && banco.semTabela === tabela) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST205', message: `Could not find the table 'public.${tabela}' in the schema cache` }) });
     if (req.method() === 'POST' && tabela === 'movements') {
       const corpo = req.postDataJSON();
       banco.gravados.push(corpo);
@@ -163,6 +164,19 @@ const entrar = async (page) => { await page.waitForSelector('.project-tile', { t
     await page.waitForTimeout(300);
     const r = await page.locator('.ficha-card').nth(1).locator('strong').innerText();
     ok('…e o resultado do dia é só a diferença para o ponto de comparação', r.replace(/\s/g, ' ') === 'R$ 31.999,75', r);
+    await page.close(); }
+
+  // 12. Internet falha só ao buscar os pontos de comparação: o app avisa em vez de calcular sem eles
+  { const banco = novoBanco(hoje); banco.semInternetEm = 'operation_baselines';
+    const page = await abrir(browser, banco); await page.waitForTimeout(2000);
+    const aviso = await page.locator('.notice').innerText().catch(() => '');
+    ok('Falha ao buscar pontos de comparação: avisa e não mostra contas sem eles', /Não foi possível carregar/.test(aviso) && (await page.locator('.project-tile').count()) === 0, aviso);
+    await page.close(); }
+
+  // 13. Banco ainda sem a limpeza de 30 dias (tabela não existe): o app funciona normalmente
+  { const banco = novoBanco(hoje); banco.semTabela = 'operation_baselines';
+    const page = await abrir(browser, banco); await entrar(page);
+    ok('Banco sem a tabela nova: o app funciona normalmente', (await page.locator('.inputs input').first().inputValue()) === '1.000.000,00');
     await page.close(); }
 
   await browser.close();

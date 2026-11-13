@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { addDays, diffsById, fromCents, money, reportDays, sumResults, toCents, todayIso } from '@/lib/calc';
+import { addDays, diffsById, fromCents, halfOf, money, reportDays, sumResults, toCents, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 type Project = { id: string; name: string };
@@ -52,7 +52,7 @@ export function ReportDetail({ project, operations, movements, anchors, net, onB
 
       <div className={`report-summary ${tone(total)}`}>
         <div><small>Resultado do período</small><strong>{money(total)}</strong></div>
-        <div><small>÷ 2</small><strong>{money(total / 2)}</strong></div>
+        <div><small>÷ 2</small><strong>{money(halfOf(total))}</strong></div>
         <div className="plain"><small>Sobra de entrada</small><strong>{money(fromCents(sobra.entry))}</strong></div>
         <div className="plain"><small>Sobra de saída</small><strong>{money(fromCents(sobra.exit))}</strong></div>
         <div className="plain"><small>Dias</small><strong>{days.length}</strong></div>
@@ -65,7 +65,7 @@ export function ReportDetail({ project, operations, movements, anchors, net, onB
             <div className="report-day-date"><b>{title(d.day)}</b><small>{d.launches.length} {d.launches.length === 1 ? 'lançamento' : 'lançamentos'}</small></div>
             <div className="report-day-values">
               <span><small>Resultado</small><strong className={tone(d.result)}>{money(d.result)}</strong></span>
-              <span><small>÷ 2</small><strong className={tone(d.result)}>{money(d.result / 2)}</strong></span>
+              <span><small>÷ 2</small><strong className={tone(d.result)}>{money(halfOf(d.result))}</strong></span>
             </div>
           </div>
           <div className="rl-table">

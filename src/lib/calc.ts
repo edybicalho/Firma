@@ -39,6 +39,8 @@ export const MAX_AMOUNT = 999_999_999_999.99;
 // (o computador erra contas com vírgula, como 0,1 + 0,2 = 0,30000000000000004).
 export const toCents = (value: number | string | null | undefined) => Math.round(Number(value ?? 0) * 100);
 export const fromCents = (cents: number) => cents / 100;
+/** Metade de um valor, exata em centavos: meio centavo arredonda para longe do zero (0,03 → 0,02; -0,03 → -0,02). */
+export const halfOf = (value: number) => { const c = toCents(value); const h = Math.round(Math.abs(c) / 2); return fromCents(c < 0 ? -h : h); };
 
 // Dia de hoje no horário de Brasília, no formato AAAA-MM-DD
 export const todayIso = (now: Date = new Date()) =>

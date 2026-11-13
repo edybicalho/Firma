@@ -1,7 +1,7 @@
 // Conferência rigorosa das contas, com valores na casa dos milhões.
 // Cada resultado do app é comparado com uma conta de referência feita em centavos inteiros (exata).
 import { describe, expect, it } from 'vitest';
-import { byDateAsc, dayResult, formatAmountInput, netById, operationDayResults, parseAmount, timeKey } from '@/lib/calc';
+import { byDateAsc, dayResult, halfOf, formatAmountInput, netById, operationDayResults, parseAmount, timeKey } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 // Gerador de números aleatórios com semente fixa: o teste é sempre o mesmo
@@ -67,6 +67,16 @@ describe('contas com milhões, comparadas com a conta exata em centavos', () => 
     expect(erros.slice(0, 3)).toEqual([]);
   });
 
+  it('÷ 2 em centavos: meio centavo arredonda para longe do zero, em 100 mil valores aleatórios', () => {
+    expect(halfOf(0.03)).toBe(0.02); expect(halfOf(-0.03)).toBe(-0.02); expect(halfOf(0.01)).toBe(0.01); expect(halfOf(0)).toBe(0);
+    expect(halfOf(1234567.89)).toBe(617283.95); expect(halfOf(9999999.99)).toBe(5000000);
+    const r = rng(5);
+    for (let i = 0; i < 100000; i++) {
+      const c = BigInt(Math.floor(r() * 2e11)) - 100000000000n; // -R$ 1 bilhão a +R$ 1 bilhão
+      const esperado = c >= 0n ? (c + 1n) / 2n : -((-c + 1n) / 2n);
+      if (halfOf(Number(c) / 100) !== Number(esperado) / 100) throw new Error(`÷ 2 errado para ${Number(c) / 100}`);
+    }
+  });
   it('o ÷ 2 de qualquer resultado em milhões aparece certo (meio centavo arredonda para cima)', () => {
     const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
     expect(brl.format(1234567.89 / 2)).toBe('R$ 617.283,95'); // 617.283,945
