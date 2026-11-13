@@ -31,6 +31,7 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
 - Valores digitados no jeito brasileiro (`1.234,56`; `1.500` = mil e quinhentos). Valor inválido é recusado com aviso, nunca vira zero. O acumulado novo não pode ser menor que o anterior, **exceto com o botão "Novo jogo"** ligado.
 - **Novo jogo** (botão no quadro de novo lançamento; por dentro é uma "nova base"): aceita qualquer número e ele vira o novo ponto de partida da ficha; o movimento desse lançamento é zero (não soma no resultado do dia) e os próximos comparam com ele. Fica marcado no banco em `movements.is_base` e aparece como "novo jogo" no histórico, na lista do calendário, na planilha e no Registro. O botão desliga sozinho depois de salvar e ao trocar de ficha. **No primeiro lançamento de uma ficha ele já vem ligado** (com a marca "1º lançamento"), para o valor que o contador já tem virar o ponto de partida em vez de entrar inteiro no resultado do dia; dá para desligar.
 - **Ordem dos lançamentos** (o movimento depende dela): dia, depois horário exato até o microssegundo (`timeKey`) e, em empate, o id — igual no app (`byDateAsc`), na conferência antes de salvar e no gatilho do banco. Nunca usar `localeCompare` para horários (ele põe "12:00:00.5" antes de "12:00:00").
+- **÷ 2 sempre com `halfOf`** (em centavos; meio centavo arredonda para longe do zero), nunca `valor / 2`.
 - **Contas sempre em centavos inteiros** (`toCents`/`fromCents` em `src/lib/calc.ts`), nunca somando valores com vírgula direto: evita sobras de fração de centavo e "-R$ 0,00". Campos de valor vêm preenchidos com pontos de milhar (1.260.000,75). Entrada e Saída mostram o valor do último lançamento; ao tocar, o campo esvazia para digitar o novo (o antigo fica clarinho no fundo) e, se sair sem digitar, o antigo volta.
 - **Uso real, com várias pessoas e celular** (testado em `e2e/cenarios.cjs`):
   - Antes de salvar, o app confere no banco se alguém lançou na mesma ficha; se sim, atualiza os valores e pede para conferir (não grava por cima).
@@ -39,6 +40,7 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
   - Ao voltar para o app (trocar de aba, desbloquear o celular), busca os dados novos (no máximo a cada 20 s) e reconfere se o acesso continua ativo; o que estava digitado não se perde.
   - Sem internet: mensagens dizem que é a conexão (`friendlyError` em `src/lib/supabase.ts`); se falhar ao abrir, mostra "Não foi possível conectar" com "Tentar de novo" (nunca "usuário desativado").
   - Campos de texto têm limite (nomes 200, observações 10.000, nome de pessoa 100), iguais aos do banco.
+- **Apagar após 30 dias (decisão do dono, apagar de verdade):** toda madrugada (03:15 de Brasília, pg_cron `apagar-mais-de-30-dias`) a função `purge_old_data(30)` apaga os lançamentos com `recorded_at <= hoje - 30` e as linhas do Registro com mais de 30 dias, **sem deixar cópia no Registro** (o gatilho de auditoria e a proteção do Registro só se desligam dentro dela, via `acumula.purging` + `session_user` postgres: conexões do app entram como `authenticator` e nunca ativam isso; testado). Antes, guarda em `operation_baselines` a entrada e a saída do último lançamento apagado de cada ficha: o app transforma isso em "âncoras" (`anchorsFrom`, `is_anchor`) que **só entram nas contas** (movimento/sobra do primeiro lançamento restante, comparação do lançamento novo, regra do acumulado no banco) e **nunca aparecem** em telas, totais ou planilha. Ficha sem lançamentos mas com âncora: o quadro mostra "Último lançamento (já apagado: mais de 30 dias)" e o "Novo jogo" não vem ligado. O Registro anota "Limpeza automática: apagou N lançamentos" e também apaga pelo dia de Brasília (mesmo critério dos lançamentos). O ponto de comparação guarda dia, hora e id do lançamento de origem (mesma ordem do app). O app busca os pontos de comparação junto com os lançamentos; falha de internet nessa busca é falha de carregamento (nunca calcula sem eles); tabela inexistente (banco sem a migração 9) segue sem eles. Prazo mínimo 30 dias; só o sistema (não o app) dispara.
 - Excluir projeto pede para digitar o nome dele.
 - Dois temas, **claro** (padrão) e **escuro**, trocados pelo botão sol/lua no topo, ao lado de Sair.
 - As janelas (modais) só fecham pelo X, Cancelar ou ao salvar; clicar fora não fecha.
@@ -57,31 +59,32 @@ Migrações em `supabase/migrations/`, a rodar **nesta ordem** no SQL Editor (to
 6. `20261113120000_nova_base.sql`: coluna `is_base` em `movements` (botão "Novo jogo").
 7. `20261114120000_conferencia_acumulado.sql`: o banco recusa acumulado menor que o último lançamento da ficha (`acumulado_menor`), exceto em "Novo jogo" ou lançamento com data anterior ao último (correção do administrador); e salva uma pessoa de cada vez por ficha (`pg_advisory_xact_lock`).
 8. `20261115120000_ultimo_acesso.sql`: função `admin_list_users` (perfis + último login de `auth.users`), só para administradores.
+9. `20261116120000_apagar_apos_30_dias.sql`: tabela `operation_baselines`, função `purge_old_data` e agendamento diário no pg_cron (se o pg_cron não ligar sozinho: Database → Extensions → pg_cron e rodar de novo).
 
 Depois: `select public.create_first_admin('admin', 'senha', 'Nome');` e desligar os cadastros públicos em Authentication.
 
 Na criação do projeto: Data API ligada, **"Automatically expose new tables" desligada** (a migração 5 libera cada tabela explicitamente) e "Enable automatic RLS" ligada. O `npm run test:db` testa os dois jeitos.
 
-**Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as 15 linhas; o `npm run test:db` também roda essa conferência.
+**Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as 17 linhas; o `npm run test:db` também roda essa conferência.
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
-**Testes:** `npm run test:telas` (16 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 88 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
+**Testes:** `npm run test:telas` (24 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 96 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações, as verificações de acesso e os testes da limpeza de 30 dias (`supabase/tests/30_apagar_30_dias.sql`) num PostgreSQL local (com pg_cron: `shared_preload_libraries = 'pg_cron'`, `cron.database_name = 'teste_novo'`), com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
-- As migrações 1 a 7 rodaram no Supabase real e a conferência deu **✅ nas 14 linhas** (confirmado pelo dono em novembro de 2026); a **8 (último acesso) ainda precisa ser rodada pelo dono** (depois, a conferência tem 15 linhas). O primeiro administrador foi criado. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
+- As **9 migrações** rodaram no Supabase real e a conferência de segurança deu **✅ nas 17 linhas** (confirmado pelo dono em novembro de 2026), incluindo a limpeza automática de 30 dias agendada no pg_cron. O primeiro administrador foi criado. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
 - **Endereços:** app oficial https://firma-6l0.pages.dev (branch `main`); site de teste https://teste.firma-6l0.pages.dev (branch `teste`, atualiza sozinho a cada envio; o dono só dá F5). Projeto no Cloudflare: `firma-6l0`. Os endereços com código (`xxxxxxxx.firma-6l0.pages.dev`) são de uma publicação específica e não mudam.
 - App publicado no **Cloudflare Pages** a partir da `main`, com `VITE_SUPABASE_URL` (só o endereço base, sem `/rest/v1/`), `VITE_SUPABASE_ANON_KEY` (chave `sb_publishable_...`) e `NODE_VERSION=22`. O login funcionou de verdade.
 - Ainda **sem dados reais**: os dados atuais são de **treino** (a equipe está aprendendo a usar, com usuários operadores). Antes dos dados reais: preparar o arquivo de limpeza (apaga projetos, fichas, lançamentos e o registro do treino; mantém o administrador; testar no PostgreSQL local antes), mudar para o plano Pro e ligar "Prevent use of leaked passwords".
 
 ## Próximos passos combinados
 
-1. Terminar os testes no app publicado: trocar a senha temporária do administrador, colocar o endereço do app em Authentication → URL Configuration → Site URL, testar um operador de teste (e apagar depois) e confirmar que "Allow new users to sign up" está desligado.
-2. Mudar para o plano Pro antes de usar com dados reais.
-3. (Feito) Supabase novo, migrações e publicação no Cloudflare Pages.
-4. Pendências de funcionalidade: o administrador **corrigir lançamentos de dias anteriores** pela tela (o banco já permite e registra). O registro de alterações já existe.
-5. Antes de usar com dados reais: plano Pro (backup diário) e, de vez em quando, baixar a planilha de lançamentos.
+**Para começar o uso real: seguir `docs/COMECAR_USO_REAL.md`** (Pro + senhas vazadas, cadastro fechado, Site URL, conferência com 17 ✅, limpeza do treino com `supabase/limpeza_dados_de_treino.sql`, trocar a senha temporária, usuários, projetos e fichas).
+
+- `supabase/limpeza_dados_de_treino.sql` (fora das migrações, de propósito): apaga projetos, fichas, lançamentos e o Registro; mantém usuários. Só roda com a frase `APAGAR DADOS DE TREINO`; testado no `npm run test:db` (sem a frase não apaga nada; depois dela a conferência fica toda ✅ e o app volta a lançar normalmente).
+- Pendência de funcionalidade: o administrador **corrigir lançamentos de dias anteriores** pela tela (o banco já permite e registra).
+- Melhorias de segurança oferecidas e ainda não escolhidas pelo dono: código no celular (MFA) para administradores, sair sozinho quando parado, bloquear senhas fracas.
 
 ## Forma de trabalho
 

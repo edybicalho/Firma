@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { addDays, diffsById, fromCents, money, reportDays, sumResults, toCents, todayIso } from '@/lib/calc';
+import { addDays, diffsById, fromCents, halfOf, money, reportDays, sumResults, toCents, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 type Project = { id: string; name: string };
@@ -20,7 +20,7 @@ const title = (day: string) => { const text = dayTitle.format(new Date(`${day}T1
 const tone = (value: number) => (value < 0 ? 'neg' : 'pos');
 
 // Histórico de um projeto em Relatórios: dia a dia, com cada lançamento (entrada, saída e movimento).
-export function ReportDetail({ project, operations, movements, net, onBack }: { project: Project; operations: Operation[]; movements: Movement[]; net: Map<string, number>; onBack: () => void }) {
+export function ReportDetail({ project, operations, movements, anchors, net, onBack }: { project: Project; operations: Operation[]; movements: Movement[]; anchors: Movement[]; net: Map<string, number>; onBack: () => void }) {
   const [period, setPeriod] = useState<Period>('30');
   const [operationId, setOperationId] = useState('');
   const [shown, setShown] = useState(PAGE);
@@ -30,7 +30,7 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
   const from = period === '7' ? addDays(today, -6) : period === '30' ? addDays(today, -29) : period === 'mes' ? `${today.slice(0, 8)}01` : undefined;
   const days = useMemo(() => reportDays(movements, net, project.id, { operationId: operationId || undefined, from, to: today }), [movements, net, project.id, operationId, from, today]);
   const total = sumResults(days);
-  const diffs = useMemo(() => diffsById(movements), [movements]);
+  const diffs = useMemo(() => diffsById([...movements, ...anchors]), [movements, anchors]);
   const sobra = days.flatMap((d) => d.launches).reduce((acc, m) => { const d = diffs.get(m.id); return { entry: acc.entry + toCents(d?.entry), exit: acc.exit + toCents(d?.exit) }; }, { entry: 0, exit: 0 });
   const launches = days.reduce((count, d) => count + d.launches.length, 0);
   const choose = (next: Period) => { setPeriod(next); setShown(PAGE); };
@@ -52,7 +52,7 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
 
       <div className={`report-summary ${tone(total)}`}>
         <div><small>Resultado do período</small><strong>{money(total)}</strong></div>
-        <div><small>÷ 2</small><strong>{money(total / 2)}</strong></div>
+        <div><small>÷ 2</small><strong>{money(halfOf(total))}</strong></div>
         <div className="plain"><small>Sobra de entrada</small><strong>{money(fromCents(sobra.entry))}</strong></div>
         <div className="plain"><small>Sobra de saída</small><strong>{money(fromCents(sobra.exit))}</strong></div>
         <div className="plain"><small>Dias</small><strong>{days.length}</strong></div>
@@ -65,7 +65,7 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
             <div className="report-day-date"><b>{title(d.day)}</b><small>{d.launches.length} {d.launches.length === 1 ? 'lançamento' : 'lançamentos'}</small></div>
             <div className="report-day-values">
               <span><small>Resultado</small><strong className={tone(d.result)}>{money(d.result)}</strong></span>
-              <span><small>÷ 2</small><strong className={tone(d.result)}>{money(d.result / 2)}</strong></span>
+              <span><small>÷ 2</small><strong className={tone(d.result)}>{money(halfOf(d.result))}</strong></span>
             </div>
           </div>
           <div className="rl-table">

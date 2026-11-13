@@ -16,6 +16,7 @@ async function abrir(browser, banco, opcoes = {}) {
     if (url.pathname.includes('/auth/v1/token')) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid login credentials', msg: 'Invalid login credentials' }) });
     const tabela = url.pathname.split('/rest/v1/')[1];
     if (banco.semInternet || (banco.semInternetEm && banco.semInternetEm === tabela)) return route.abort('internetdisconnected');
+    if (banco.semTabela && banco.semTabela === tabela) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST205', message: `Could not find the table 'public.${tabela}' in the schema cache` }) });
     if (req.method() === 'POST' && tabela === 'movements') {
       const corpo = req.postDataJSON();
       banco.gravados.push(corpo);
@@ -43,8 +44,9 @@ const novoBanco = (hoje) => ({
   profiles: [{ id: uid, username: 'joao', name: 'João', role: 'operator', active: true, created_at: '2026-01-01' }],
   projects: [{ id: 'p1', name: 'Obra Norte', status: 'Ativo', notes: null, created_at: '2026-01-01' }],
   operations: [{ id: 'o1', project_id: 'p1', operation_number: 1, name: 'Ficha' }],
-  movements: [{ id: 'm1', project_id: 'p1', operation_id: 'o1', entry_total: 1000000, exit_total: 400000, recorded_at: hoje, created_at: `${hoje}T12:00:00Z`, is_base: false }],
+  movements: [{ id: 'm1', project_id: 'p1', operation_id: 'o1', entry_total: 1000000, exit_total: 400000, recorded_at: hoje, created_at: new Date(Date.now() - 3600e3).toISOString(), is_base: false }],
   audit_log: [],
+  operation_baselines: [],
 });
 const entrar = async (page) => { await page.waitForSelector('.project-tile', { timeout: 8000 }); await page.click('.project-tile >> text=Obra Norte'); await page.waitForSelector('.inputs input'); };
 
@@ -143,6 +145,38 @@ const entrar = async (page) => { await page.waitForSelector('.project-tile', { t
     await page.click('button.save'); await page.waitForTimeout(800);
     const g = banco.gravados.at(-1);
     ok('Primeiro lançamento com "Novo jogo" desligado: salva como lançamento comum', g && !g.is_base, JSON.stringify(g));
+    await page.close(); }
+
+  // 11. Limpeza de 30 dias: ficha com todos os lançamentos apagados usa o ponto de comparação guardado
+  { const banco = novoBanco(hoje); banco.operations.push({ id: 'o2', project_id: 'p1', operation_number: 2, name: 'Ficha' });
+    banco.operation_baselines.push({ operation_id: 'o2', entry_total: 1260000.75, exit_total: 452000.5, recorded_at: '2026-09-01' });
+    const page = await abrir(browser, banco); await entrar(page);
+    await page.locator('.ficha-card').nth(1).click(); await page.waitForTimeout(200);
+    ok('Ficha já limpa: o campo vem com o último valor apagado', (await page.locator('.inputs input').first().inputValue()) === '1.260.000,75', await page.locator('.inputs input').first().inputValue());
+    ok('…"Novo jogo" NÃO vem ligado (ela já tem ponto de comparação)', await page.locator('.base-toggle.on').count() === 0);
+    ok('…o quadro avisa que o último lançamento já foi apagado', /já apagado/.test(await page.locator('.previous-date').innerText()));
+    await page.locator('.inputs input').first().fill('1.000.000');
+    ok('…valor menor que o ponto de comparação é recusado', /menor/.test(await page.locator('.field-error').first().innerText().catch(() => '')));
+    await page.locator('.inputs input').first().fill('1.300.000'); await page.locator('.inputs input').nth(1).fill('460.000');
+    await page.click('button.save'); await page.waitForTimeout(800);
+    const g = banco.gravados.at(-1);
+    ok('…valor maior salva como lançamento comum', g && !g.is_base && g.entry_total === 1300000, JSON.stringify(g));
+    await page.waitForTimeout(300);
+    const r = await page.locator('.ficha-card').nth(1).locator('strong').innerText();
+    ok('…e o resultado do dia é só a diferença para o ponto de comparação', r.replace(/\s/g, ' ') === 'R$ 31.999,75', r);
+    await page.close(); }
+
+  // 12. Internet falha só ao buscar os pontos de comparação: o app avisa em vez de calcular sem eles
+  { const banco = novoBanco(hoje); banco.semInternetEm = 'operation_baselines';
+    const page = await abrir(browser, banco); await page.waitForTimeout(2000);
+    const aviso = await page.locator('.notice').innerText().catch(() => '');
+    ok('Falha ao buscar pontos de comparação: avisa e não mostra contas sem eles', /Não foi possível carregar/.test(aviso) && (await page.locator('.project-tile').count()) === 0, aviso);
+    await page.close(); }
+
+  // 13. Banco ainda sem a limpeza de 30 dias (tabela não existe): o app funciona normalmente
+  { const banco = novoBanco(hoje); banco.semTabela = 'operation_baselines';
+    const page = await abrir(browser, banco); await entrar(page);
+    ok('Banco sem a tabela nova: o app funciona normalmente', (await page.locator('.inputs input').first().inputValue()) === '1.000.000,00');
     await page.close(); }
 
   await browser.close();
