@@ -12,9 +12,8 @@ Lista para sair do treino e começar a lançar os dados de verdade. Faça na ord
 
 ## 2. Conferir o banco
 
-1. **SQL Editor → New query**, cole e rode `supabase/migrations/20261115120000_ultimo_acesso.sql` (se ainda não rodou).
-2. Rode `supabase/conferencia_seguranca.sql`: **as 15 linhas com ✅**.
-3. **Advisors → Security Advisor**: **0 erros** (os avisos amarelos já conhecidos são esperados).
+1. Rode `supabase/conferencia_seguranca.sql` no **SQL Editor**: **as 17 linhas com ✅** (a 17 confirma a limpeza automática de 30 dias agendada).
+2. **Advisors → Security Advisor**: **0 erros** (os avisos amarelos já conhecidos são esperados).
 
 ## 3. Apagar os dados de treino
 
@@ -42,3 +41,5 @@ Lista para sair do treino e começar a lançar os dados de verdade. Faça na ord
 - **Toda semana**: Configurações → **Baixar planilha de lançamentos** e guardar fora do computador (ex.: Google Drive).
 - **De vez em quando**: olhar **Registro** e o **último acesso** em Usuários; rodar a conferência de segurança.
 - Contador recomeçou? Ligar **Novo jogo** antes de salvar.
+
+- **Lembrete:** lançamentos e Registro com mais de 30 dias são **apagados sozinhos** toda madrugada (03:15). Se precisar guardar algo, baixe a planilha antes.

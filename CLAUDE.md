@@ -73,14 +73,14 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
-- As migrações 1 a 7 rodaram no Supabase real e a conferência deu **✅ nas 14 linhas** (confirmado pelo dono em novembro de 2026); a **8 (último acesso) ainda precisa ser rodada pelo dono** (depois, a conferência tem 15 linhas). O primeiro administrador foi criado. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
+- As **9 migrações** rodaram no Supabase real e a conferência de segurança deu **✅ nas 17 linhas** (confirmado pelo dono em novembro de 2026), incluindo a limpeza automática de 30 dias agendada no pg_cron. O primeiro administrador foi criado. O Security Advisor mostra 0 erros e 9 avisos esperados (funções de administrador chamáveis por usuários logados, que conferem `is_admin()` por dentro; `rls_auto_enable` do próprio Supabase; proteção de senhas vazadas, que só existe no Pro).
 - **Endereços:** app oficial https://firma-6l0.pages.dev (branch `main`); site de teste https://teste.firma-6l0.pages.dev (branch `teste`, atualiza sozinho a cada envio; o dono só dá F5). Projeto no Cloudflare: `firma-6l0`. Os endereços com código (`xxxxxxxx.firma-6l0.pages.dev`) são de uma publicação específica e não mudam.
 - App publicado no **Cloudflare Pages** a partir da `main`, com `VITE_SUPABASE_URL` (só o endereço base, sem `/rest/v1/`), `VITE_SUPABASE_ANON_KEY` (chave `sb_publishable_...`) e `NODE_VERSION=22`. O login funcionou de verdade.
 - Ainda **sem dados reais**: os dados atuais são de **treino** (a equipe está aprendendo a usar, com usuários operadores). Antes dos dados reais: preparar o arquivo de limpeza (apaga projetos, fichas, lançamentos e o registro do treino; mantém o administrador; testar no PostgreSQL local antes), mudar para o plano Pro e ligar "Prevent use of leaked passwords".
 
 ## Próximos passos combinados
 
-**Para começar o uso real: seguir `docs/COMECAR_USO_REAL.md`** (Pro + senhas vazadas, cadastro fechado, Site URL, migração 8 e conferência com 15 ✅, limpeza do treino com `supabase/limpeza_dados_de_treino.sql`, trocar a senha temporária, usuários, projetos e fichas).
+**Para começar o uso real: seguir `docs/COMECAR_USO_REAL.md`** (Pro + senhas vazadas, cadastro fechado, Site URL, conferência com 17 ✅, limpeza do treino com `supabase/limpeza_dados_de_treino.sql`, trocar a senha temporária, usuários, projetos e fichas).
 
 - `supabase/limpeza_dados_de_treino.sql` (fora das migrações, de propósito): apaga projetos, fichas, lançamentos e o Registro; mantém usuários. Só roda com a frase `APAGAR DADOS DE TREINO`; testado no `npm run test:db` (sem a frase não apaga nada; depois dela a conferência fica toda ✅ e o app volta a lançar normalmente).
 - Pendência de funcionalidade: o administrador **corrigir lançamentos de dias anteriores** pela tela (o banco já permite e registra).
