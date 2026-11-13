@@ -39,6 +39,7 @@ App web de controle financeiro por projeto. O dono do projeto fala português do
   - Ao voltar para o app (trocar de aba, desbloquear o celular), busca os dados novos (no máximo a cada 20 s) e reconfere se o acesso continua ativo; o que estava digitado não se perde.
   - Sem internet: mensagens dizem que é a conexão (`friendlyError` em `src/lib/supabase.ts`); se falhar ao abrir, mostra "Não foi possível conectar" com "Tentar de novo" (nunca "usuário desativado").
   - Campos de texto têm limite (nomes 200, observações 10.000, nome de pessoa 100), iguais aos do banco.
+- **Apagar após 30 dias (decisão do dono, apagar de verdade):** toda madrugada (03:15 de Brasília, pg_cron `apagar-mais-de-30-dias`) a função `purge_old_data(30)` apaga os lançamentos com `recorded_at <= hoje - 30` e as linhas do Registro com mais de 30 dias, **sem deixar cópia no Registro** (o gatilho de auditoria e a proteção do Registro só se desligam dentro dela, via `acumula.purging` + `current_user` postgres). Antes, guarda em `operation_baselines` a entrada e a saída do último lançamento apagado de cada ficha: o app transforma isso em "âncoras" (`anchorsFrom`, `is_anchor`) que **só entram nas contas** (movimento/sobra do primeiro lançamento restante, comparação do lançamento novo, regra do acumulado no banco) e **nunca aparecem** em telas, totais ou planilha. Ficha sem lançamentos mas com âncora: o quadro mostra "Último lançamento (já apagado: mais de 30 dias)" e o "Novo jogo" não vem ligado. O Registro anota "Limpeza automática: apagou N lançamentos". Prazo mínimo 30 dias; só o sistema (não o app) dispara.
 - Excluir projeto pede para digitar o nome dele.
 - Dois temas, **claro** (padrão) e **escuro**, trocados pelo botão sol/lua no topo, ao lado de Sair.
 - As janelas (modais) só fecham pelo X, Cancelar ou ao salvar; clicar fora não fecha.
@@ -57,16 +58,17 @@ Migrações em `supabase/migrations/`, a rodar **nesta ordem** no SQL Editor (to
 6. `20261113120000_nova_base.sql`: coluna `is_base` em `movements` (botão "Novo jogo").
 7. `20261114120000_conferencia_acumulado.sql`: o banco recusa acumulado menor que o último lançamento da ficha (`acumulado_menor`), exceto em "Novo jogo" ou lançamento com data anterior ao último (correção do administrador); e salva uma pessoa de cada vez por ficha (`pg_advisory_xact_lock`).
 8. `20261115120000_ultimo_acesso.sql`: função `admin_list_users` (perfis + último login de `auth.users`), só para administradores.
+9. `20261116120000_apagar_apos_30_dias.sql`: tabela `operation_baselines`, função `purge_old_data` e agendamento diário no pg_cron (se o pg_cron não ligar sozinho: Database → Extensions → pg_cron e rodar de novo).
 
 Depois: `select public.create_first_admin('admin', 'senha', 'Nome');` e desligar os cadastros públicos em Authentication.
 
 Na criação do projeto: Data API ligada, **"Automatically expose new tables" desligada** (a migração 5 libera cada tabela explicitamente) e "Enable automatic RLS" ligada. O `npm run test:db` testa os dois jeitos.
 
-**Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as 15 linhas; o `npm run test:db` também roda essa conferência.
+**Guia completo para o dono:** `docs/SUPABASE_SEGURO.md` (conta com MFA, plano Pro, cadastro fechado, migrações, primeiro administrador com senha temporária, chaves, rotina). Depois de instalar, `supabase/conferencia_seguranca.sql` (só lê) tem que mostrar ✅ em todas as 17 linhas; o `npm run test:db` também roda essa conferência.
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
-**Testes:** `npm run test:telas` (16 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 89 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações e 93 verificações de acesso num PostgreSQL local, com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
+**Testes:** `npm run test:telas` (22 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 95 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações, as verificações de acesso e os testes da limpeza de 30 dias (`supabase/tests/30_apagar_30_dias.sql`) num PostgreSQL local (com pg_cron: `shared_preload_libraries = 'pg_cron'`, `cron.database_name = 'teste_novo'`), com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromCents, toCents, dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, diffsById, reportDays, sumResults, addDays, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
+import { fromCents, toCents, dayResult, formatAmountInput, lastDayByProject, movementsCsv, netById, diffsById, anchorsFrom, reportDays, sumResults, addDays, operationDayResults, parseAmount, todayIso } from '@/lib/calc';
 import type { Movement } from '@/lib/calc';
 
 describe('parseAmount: leitura dos valores digitados', () => {
@@ -234,5 +234,33 @@ describe('sobra de entrada e de saída de cada lançamento', () => {
   });
   it('movimento = sobra de entrada - sobra de saída, sempre', () => {
     for (const m of all) expect(net.get(m.id)).toBe(fromCents(toCents(diffs.get(m.id)!.entry) - toCents(diffs.get(m.id)!.exit)));
+  });
+});
+
+describe('limpeza de 30 dias: ponto de comparação (âncora)', () => {
+  const anchors = anchorsFrom([{ operation_id: 'op1', entry_total: 1200000, exit_total: 450000, recorded_at: '2026-10-14' }], [{ id: 'op1', project_id: 'p1' }]);
+  const restantes = [mv('a1', 'op1', 1260000.75, 452000.5, '2026-10-15'), mv('a2', 'op1', 1300000, 460000, '2026-11-08')];
+  const all = [...restantes, ...anchors];
+  const net = netById(all);
+  it('o primeiro lançamento que sobrou compara com o último apagado (não conta o valor inteiro)', () => {
+    expect(net.get('a1')).toBe((1260000.75 - 1200000) - (452000.5 - 450000));
+    expect(diffsById(all).get('a1')).toEqual({ entry: 60000.75, exit: 2000.5 });
+  });
+  it('sem a âncora, o primeiro contaria o valor inteiro (o problema que ela evita)', () => {
+    expect(netById(restantes).get('a1')).toBe(1260000.75 - 452000.5);
+  });
+  it('a âncora nunca aparece: nem no resultado do dia, nem no histórico, nem na última alteração', () => {
+    expect(dayResult(all, net, 'p1', '2026-10-14')).toBe(0);
+    expect(operationDayResults(all, net, 'p1', '2026-10-14').size).toBe(0);
+    expect(reportDays(all, net, 'p1').flatMap((d) => d.launches).some((m) => m.is_anchor)).toBe(false);
+    expect(lastDayByProject(anchors)).toEqual({});
+  });
+  it('a planilha usa a âncora nas contas mas não lista ela', () => {
+    const csv = movementsCsv(restantes, () => 'P', () => 'O', anchors);
+    expect(csv).toContain(';15/10/2026;1260000,75;452000,50;60000,75;2000,50;58000,25;Não');
+    expect(csv.split('\r\n').filter(Boolean)).toHaveLength(3);
+  });
+  it('âncora de ficha que não existe mais é ignorada', () => {
+    expect(anchorsFrom([{ operation_id: 'sumiu', entry_total: 1, exit_total: 1, recorded_at: '2026-01-01' }], [])).toEqual([]);
   });
 });

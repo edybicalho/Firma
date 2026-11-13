@@ -33,6 +33,9 @@ describe('frases do registro de alterações', () => {
   it('limpeza dos dados de treino', () => {
     expect(describeAudit(entry('sistema', 'LIMPEZA', null, null), lookups)).toBe('Apagou os dados de treino para começar o uso real');
   });
+  it('limpeza automática de 30 dias', () => {
+    expect(describeAudit(entry('sistema', 'LIMPEZA_30_DIAS', null, { lancamentos: 12 }), lookups)).toBe('Limpeza automática: apagou 12 lançamentos com mais de 30 dias');
+  });
   it('troca de senha', () => {
     expect(describeAudit(entry('profiles', 'SENHA', { username: 'joao' }, null), lookups)).toBe('Trocou a senha do usuário joao');
   });

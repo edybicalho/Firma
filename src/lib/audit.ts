@@ -68,6 +68,7 @@ export function describeAudit(entry: AuditEntry, lookups: AuditLookups): string 
     }
     case 'sistema':
       if (entry.action === 'LIMPEZA') return 'Apagou os dados de treino para começar o uso real';
+      if (entry.action === 'LIMPEZA_30_DIAS') { const n = Number((entry.new_data ?? {}).lancamentos ?? 0); return `Limpeza automática: apagou ${n} ${n === 1 ? 'lançamento' : 'lançamentos'} com mais de 30 dias`; }
       return `${entry.action} no sistema`;
     default:
       return `${entry.action} em ${entry.table_name}`;

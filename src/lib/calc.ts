@@ -10,7 +10,28 @@ export type Movement = {
   created_at: string;
   /** Novo jogo (nova base): não soma no resultado; os próximos lançamentos comparam com este. */
   is_base?: boolean | null;
+  /** Ponto de comparação de um lançamento já apagado (limpeza de 30 dias): só entra nas contas, nunca aparece. */
+  is_anchor?: boolean;
 };
+
+export type Baseline = { operation_id: string; entry_total: number; exit_total: number; recorded_at: string };
+
+/** Transforma os pontos de comparação guardados (lançamentos apagados após 30 dias) em "lançamentos-âncora":
+ *  entram nas contas como o lançamento anterior, mas nunca aparecem nas telas, planilhas ou totais. */
+export function anchorsFrom(baselines: Baseline[], operations: { id: string; project_id: string }[]): Movement[] {
+  const projectOf = new Map(operations.map((op) => [op.id, op.project_id]));
+  return baselines.filter((b) => projectOf.has(b.operation_id)).map((b) => ({
+    id: `anchor:${b.operation_id}`,
+    project_id: projectOf.get(b.operation_id)!,
+    operation_id: b.operation_id,
+    entry_total: Number(b.entry_total),
+    exit_total: Number(b.exit_total),
+    recorded_at: b.recorded_at,
+    created_at: `${b.recorded_at}T00:00:00+00:00`,
+    is_anchor: true,
+  }));
+}
+export const isReal = (m: Movement) => !m.is_anchor;
 
 export const MAX_AMOUNT = 999_999_999_999.99;
 
@@ -121,7 +142,7 @@ export function netById(movements: Movement[]): Map<string, number> {
 /** Resultado de um projeto num dia: soma dos movimentos reais lançados naquele dia. */
 export function dayResult(movements: Movement[], net: Map<string, number>, projectId: string, day: string) {
   let total = 0;
-  for (const m of movements) if (m.project_id === projectId && m.recorded_at === day) total += toCents(net.get(m.id));
+  for (const m of movements) if (!m.is_anchor && m.project_id === projectId && m.recorded_at === day) total += toCents(net.get(m.id));
   return fromCents(total);
 }
 
@@ -129,7 +150,7 @@ export function dayResult(movements: Movement[], net: Map<string, number>, proje
 export function operationDayResults(movements: Movement[], net: Map<string, number>, projectId: string, day: string) {
   const cents = new Map<string, number>();
   for (const m of movements) {
-    if (m.project_id !== projectId || m.recorded_at !== day) continue;
+    if (m.is_anchor || m.project_id !== projectId || m.recorded_at !== day) continue;
     cents.set(m.operation_id, (cents.get(m.operation_id) ?? 0) + toCents(net.get(m.id)));
   }
   return new Map([...cents].map(([op, c]) => [op, fromCents(c)]));
@@ -149,7 +170,7 @@ export type ReportDay = { day: string; result: number; launches: Movement[] };
 export function reportDays(movements: Movement[], net: Map<string, number>, projectId: string, filter: { operationId?: string; from?: string; to?: string } = {}): ReportDay[] {
   const days = new Map<string, { cents: number; launches: Movement[] }>();
   for (const m of movements) {
-    if (m.project_id !== projectId) continue;
+    if (m.is_anchor || m.project_id !== projectId) continue;
     if (filter.operationId && m.operation_id !== filter.operationId) continue;
     if (filter.from && m.recorded_at < filter.from) continue;
     if (filter.to && m.recorded_at > filter.to) continue;
@@ -169,7 +190,7 @@ export const sumResults = (days: ReportDay[]) => fromCents(days.reduce((total, d
 /** Último dia com lançamento em cada projeto. */
 export function lastDayByProject(movements: Movement[]) {
   const acc: Record<string, string> = {};
-  for (const m of movements) if (!acc[m.project_id] || m.recorded_at > acc[m.project_id]) acc[m.project_id] = m.recorded_at;
+  for (const m of movements) if (!m.is_anchor && (!acc[m.project_id] || m.recorded_at > acc[m.project_id])) acc[m.project_id] = m.recorded_at;
   return acc;
 }
 
@@ -178,13 +199,14 @@ export function movementsCsv(
   movements: Movement[],
   projectName: (id: string) => string,
   operationLabel: (id: string) => string,
+  anchors: Movement[] = [],
 ) {
-  const net = netById(movements);
-  const diffs = diffsById(movements);
+  const net = netById([...movements, ...anchors]);
+  const diffs = diffsById([...movements, ...anchors]);
   // Textos que começam com = + - @ viram fórmula no Excel; o apóstrofo impede isso
   const cell = (value: string) => `"${(/^[=+\-@\t\r]/.test(value) ? `'${value}` : value).replace(/"/g, '""')}"`;
   const num = (value: number) => Number(value).toFixed(2).replace('.', ',');
-  const rows = [...movements].sort(byDateAsc).map((m) => [
+  const rows = movements.filter(isReal).sort(byDateAsc).map((m) => [
     cell(projectName(m.project_id)),
     cell(operationLabel(m.operation_id)),
     m.recorded_at.split('-').reverse().join('/'),

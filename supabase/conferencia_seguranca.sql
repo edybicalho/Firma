@@ -68,6 +68,17 @@ with checks(ordem, item, ok, o_que_fazer) as (
     exists (select 1 from pg_proc where proname = 'admin_list_users' and pronamespace = 'public'::regnamespace)
     and not has_function_privilege('anon', 'public.admin_list_users()', 'execute'),
     'Rode a migração 8 (20261115120000_ultimo_acesso.sql).'
+  union all
+  select 16, 'Limpeza de 30 dias instalada (com ponto de comparação das fichas)',
+    exists (select 1 from pg_proc where proname = 'purge_old_data' and pronamespace = 'public'::regnamespace)
+    and exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'operation_baselines')
+    and not has_function_privilege('authenticated', 'public.purge_old_data(integer)', 'execute'),
+    'Rode a migração 9 (20261116120000_apagar_apos_30_dias.sql).'
+  union all
+  select 17, 'Limpeza de 30 dias agendada (toda madrugada, 03:15)',
+    exists (select 1 from pg_extension where extname = 'pg_cron')
+    and exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'cron' and c.relname = 'job'),
+    'Ligue o pg_cron (Database → Extensions → pg_cron) e rode a migração 9 de novo.'
 )
 select ordem as "nº", case when ok then '✅' else '❌' end as "situação", item as "conferência",
        case when ok then '' else o_que_fazer end as "o que fazer"

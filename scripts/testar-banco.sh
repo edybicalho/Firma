@@ -12,7 +12,7 @@ rodar_migracoes() {
 }
 
 novo_banco() {
-  "${PSQL[@]}" -d postgres -c "drop database if exists $1" -c "create database $1" >/dev/null
+  "${PSQL[@]}" -d postgres -c "drop database if exists $1 with (force)" -c "create database $1" >/dev/null
   "${PSQL[@]}" -d "$1" -f supabase/tests/00_supabase_stub.sql >/dev/null
 }
 
@@ -21,6 +21,7 @@ novo_banco teste_novo
 rodar_migracoes teste_novo
 rodar_migracoes teste_novo
 "${PSQL[@]}" -d teste_novo -At -f supabase/tests/10_regras_de_acesso.sql
+"${PSQL[@]}" -d teste_novo -At -f supabase/tests/30_apagar_30_dias.sql
 echo "   Conferência de segurança (supabase/conferencia_seguranca.sql):"
 conferencia=$("${PSQL[@]}" -d teste_novo -At -F ' | ' -f supabase/conferencia_seguranca.sql)
 echo "$conferencia" | sed 's/^/   /'
@@ -31,7 +32,7 @@ novo_banco teste_sem_exposicao
 "${PSQL[@]}" -d teste_sem_exposicao -f supabase/tests/02_sem_exposicao_automatica.sql >/dev/null
 rodar_migracoes teste_sem_exposicao
 "${PSQL[@]}" -d teste_sem_exposicao -At -f supabase/tests/10_regras_de_acesso.sql
-if "${PSQL[@]}" -d teste_sem_exposicao -At -F ' | ' -f supabase/conferencia_seguranca.sql | grep -q '❌'; then echo "FALHOU: conferência de segurança"; exit 1; fi
+if "${PSQL[@]}" -d teste_sem_exposicao -At -F ' | ' -f supabase/conferencia_seguranca.sql | grep -v 'agendada' | grep -q '❌'; then echo "FALHOU: conferência de segurança"; exit 1; fi
 echo "   Conferência de segurança: tudo ✅"
 
 echo "   Limpeza dos dados de treino:"
@@ -61,5 +62,5 @@ rodar_migracoes teste_bolt
 echo "   Conferência no banco antigo (deve apontar o número repetido e a falta de administrador):"
 "${PSQL[@]}" -d teste_bolt -At -F ' | ' -f supabase/conferencia_seguranca.sql | grep '❌' | sed 's/^/   /'
 
-"${PSQL[@]}" -d postgres -c "drop database teste_novo" -c "drop database teste_sem_exposicao" -c "drop database teste_bolt" >/dev/null
+"${PSQL[@]}" -d postgres -c "drop database teste_novo with (force)" -c "drop database teste_sem_exposicao with (force)" -c "drop database teste_bolt with (force)" >/dev/null
 echo "Tudo certo."

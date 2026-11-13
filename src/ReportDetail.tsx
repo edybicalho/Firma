@@ -20,7 +20,7 @@ const title = (day: string) => { const text = dayTitle.format(new Date(`${day}T1
 const tone = (value: number) => (value < 0 ? 'neg' : 'pos');
 
 // Histórico de um projeto em Relatórios: dia a dia, com cada lançamento (entrada, saída e movimento).
-export function ReportDetail({ project, operations, movements, net, onBack }: { project: Project; operations: Operation[]; movements: Movement[]; net: Map<string, number>; onBack: () => void }) {
+export function ReportDetail({ project, operations, movements, anchors, net, onBack }: { project: Project; operations: Operation[]; movements: Movement[]; anchors: Movement[]; net: Map<string, number>; onBack: () => void }) {
   const [period, setPeriod] = useState<Period>('30');
   const [operationId, setOperationId] = useState('');
   const [shown, setShown] = useState(PAGE);
@@ -30,7 +30,7 @@ export function ReportDetail({ project, operations, movements, net, onBack }: { 
   const from = period === '7' ? addDays(today, -6) : period === '30' ? addDays(today, -29) : period === 'mes' ? `${today.slice(0, 8)}01` : undefined;
   const days = useMemo(() => reportDays(movements, net, project.id, { operationId: operationId || undefined, from, to: today }), [movements, net, project.id, operationId, from, today]);
   const total = sumResults(days);
-  const diffs = useMemo(() => diffsById(movements), [movements]);
+  const diffs = useMemo(() => diffsById([...movements, ...anchors]), [movements, anchors]);
   const sobra = days.flatMap((d) => d.launches).reduce((acc, m) => { const d = diffs.get(m.id); return { entry: acc.entry + toCents(d?.entry), exit: acc.exit + toCents(d?.exit) }; }, { entry: 0, exit: 0 });
   const launches = days.reduce((count, d) => count + d.launches.length, 0);
   const choose = (next: Period) => { setPeriod(next); setShown(PAGE); };
