@@ -69,7 +69,7 @@ Na criação do projeto: Data API ligada, **"Automatically expose new tables" de
 
 Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de operação repetidos), nada foi perdido: corrigir os dados e rodar a 5 de novo.
 
-**Testes:** `npm run test:telas` (24 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 96 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações, as verificações de acesso e os testes da limpeza de 30 dias (`supabase/tests/30_apagar_30_dias.sql`) num PostgreSQL local (com pg_cron: `shared_preload_libraries = 'pg_cron'`, `cron.database_name = 'teste_novo'`), com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados.
+**Testes:** `npm run test:telas` (24 cenários do dia a dia no navegador, com banco simulado). `npm run check` (tipos, verificador e 96 testes; `src/lib/calc.milhoes.test.ts` compara milhares de lançamentos aleatórios em milhões com a conta exata em centavos). `npm run test:db` roda as migrações, as verificações de acesso e os testes da limpeza de 30 dias (`supabase/tests/30_apagar_30_dias.sql`) num PostgreSQL local (com pg_cron: `shared_preload_libraries = 'pg_cron'`, `cron.database_name = 'teste_novo'`), com uma imitação do Supabase (`supabase/tests/`), num banco novo e num banco antigo do Bolt com dados. Numa máquina nova: instalar `postgresql-16-cron`, pôr as duas linhas do pg_cron no `postgresql.conf`, trocar `peer`/`scram-sha-256` por `trust` no `pg_hba.conf` (o teste entra como `authenticator`), ligar o PostgreSQL e rodar `PGUSER=postgres npm run test:db`. No banco antigo do Bolt aparecem 3 ❌ esperados (linhas 6, 12 e 17).
 
 **Situação (novembro de 2026):**
 - Supabase **novo** criado (projeto `acumula`, região São Paulo, **plano gratuito por enquanto**), com conta protegida por autenticação em dois fatores. Criado com "Automatically expose new tables" desligado e "Enable automatic RLS" ligado; GitHub **não** conectado ao Supabase.
@@ -84,7 +84,18 @@ Se a migração 5 mostrar um "Aviso" (dados antigos fora da regra ou números de
 
 - `supabase/limpeza_dados_de_treino.sql` (fora das migrações, de propósito): apaga projetos, fichas, lançamentos e o Registro; mantém usuários. Só roda com a frase `APAGAR DADOS DE TREINO`; testado no `npm run test:db` (sem a frase não apaga nada; depois dela a conferência fica toda ✅ e o app volta a lançar normalmente).
 - Pendência de funcionalidade: o administrador **corrigir lançamentos de dias anteriores** pela tela (o banco já permite e registra).
-- Melhorias de segurança oferecidas e ainda não escolhidas pelo dono: código no celular (MFA) para administradores, sair sozinho quando parado, bloquear senhas fracas.
+- **Verificação completa em 15/11/2026:** `check` (96 ✅), `test:telas` (todos ✅), `test:db` (17 ✅ na conferência) e o dono confirmou que o app oficial está no ar normal. (Daqui não dá para abrir os endereços `*.pages.dev`: o proxy bloqueia; quem confere o site é o dono.)
+- **Melhorias oferecidas ao dono (16/11/2026), aguardando ele escolher os números:**
+  1. Administrador corrigir lançamento de dia anterior pela tela (a pendência acima; recomendada primeiro).
+  2. Código no celular (MFA) para administradores.
+  3. Sair sozinho quando parado.
+  4. Bloquear senhas fracas.
+  5. Destacar no Painel as fichas ainda sem lançamento hoje (recomendada em segundo).
+  6. Gráfico do resultado por dia no histórico (Relatórios).
+  7. Comparar projetos lado a lado no mesmo período.
+  8. Relatório em PDF para imprimir ou mandar no WhatsApp.
+  9. Cópia de segurança: lembrete semanal de baixar a planilha e/ou explicar o backup do Supabase Pro.
+  Recomendação dada: 1, depois 5; 2 e 3 antes do uso real.
 
 ## Forma de trabalho
 
